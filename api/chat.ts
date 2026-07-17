@@ -13,7 +13,7 @@ function getNextApiKey() {
     }
   }
   const cleanedKeys = Array.from(new Set(
-    keys.map(k => k.replace(/[\u200B-\u200D\uFEFF\u200E\u200F\s]/g, '')).filter(k => k.length > 0)
+    keys.map(k => k.replace(/[\u200B-\u200D\uFEFF\u200E\u200F\s"']/g, '')).filter(k => k.length > 0)
   ));
   if (cleanedKeys.length === 0) return null;
   const key = cleanedKeys[currentKeyIndex % cleanedKeys.length];
@@ -31,8 +31,16 @@ async function generateWithRotation(params: any) {
 }
 
 export default async function handler(req: any, res: any) {
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
     try {
-      let body = req.body;
+      let body = req.body || {};
       if (typeof body === 'string') {
         body = JSON.parse(body);
       } else if (Buffer.isBuffer(body)) {
@@ -77,7 +85,7 @@ graph TD
 الطور: ${stage}
 المستوى: ${level}`;
 
-      const formattedHistory = history.map((msg: any) => ({
+      const formattedHistory = (history || []).map((msg: any) => ({
         role: msg.role === 'user' ? 'user' : 'model',
         parts: [{ text: msg.content }]
       }));

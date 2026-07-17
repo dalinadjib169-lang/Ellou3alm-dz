@@ -68,14 +68,15 @@ export function StudentView() {
       });
 
       if (!response.ok) {
-        throw new Error('فشل في الاتصال بالخادم');
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'فشل في الاتصال بالخادم');
       }
 
       const data = await response.json();
       setMessages(prev => [...prev, { role: 'model', content: data.reply }]);
     } catch (error) {
       console.error(error);
-      setMessages(prev => [...prev, { role: 'model', content: 'عذراً، حدث خطأ أثناء الاتصال. يرجى المحاولة مرة أخرى.' }]);
+      setMessages(prev => [...prev, { role: 'model', content: error?.message || 'عذراً، حدث خطأ أثناء الاتصال. يرجى المحاولة مرة أخرى.' }]);
     } finally {
       setIsLoading(false);
     }

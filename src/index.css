@@ -58,3 +58,4 @@ html, body {
   height: 100vh;
   overflow: hidden;
 }
+@custom-variant dark (&:where(.dark, .dark *));

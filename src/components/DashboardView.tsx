@@ -5,7 +5,7 @@ import { db } from '../lib/firebase';
 import { Settings, Save, Image as ImageIcon, Loader2 } from 'lucide-react';
 
 export function DashboardView() {
-  const [welcomeMessage, setWelcomeMessage] = useState('مرحباً بك يا بني! أنا أستاذك الجزائري 🇩🇿. اختر الطور والمستوى واسألني أي سؤال.');
+  const [welcomeMessage, setWelcomeMessage] = useState('مرحباً ابني/ابنتي، معك الأستاذ دالي نجيب. صلِّ على محمد واطرح سؤالك، سأكون سعيداً بالإجابة عليه.');
   const [profilePicUrl, setProfilePicUrl] = useState('');
   const [uploadPreset, setUploadPreset] = useState('ml_default');
   const [isSaving, setIsSaving] = useState(false);

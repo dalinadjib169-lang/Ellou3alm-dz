@@ -82,7 +82,7 @@ export function StudentView() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#F9FBFC] text-[#1A1A1A] font-sans text-right overflow-x-hidden" dir="rtl">
+    <div className="flex flex-col h-full bg-[#F9FBFC] text-[#1A1A1A] font-sans text-right overflow-x-hidden" dir="rtl">
       {/* Header */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 md:p-8 shrink-0 gap-4">
         <div>

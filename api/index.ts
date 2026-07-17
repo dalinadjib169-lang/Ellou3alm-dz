@@ -1,7 +1,21 @@
+
 import express from 'express';
-import path from 'path';
-import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
+
+const app = express();
+app.use(express.json());
+
+// Add CORS headers for Vercel
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  next();
+});
 
 let currentKeyIndex = 0;
 
@@ -42,14 +56,9 @@ async function generateWithRotation(params: any) {
   return await ai.models.generateContent(params);
 }
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
 
-  app.use(express.json());
 
-  // API endpoint for Gemini chat
-  app.post('/api/chat', async (req, res) => {
+app.post('/api/chat', async (req, res) => {
     try {
       const { message, stage, level, history } = req.body;
 
@@ -64,7 +73,7 @@ async function startServer() {
 - تنهي إجابتك دائماً بسؤال حول الموضوع الذي طرحه التلميذ لضمان الفهم الجيد والاستيعاب السريع.
 - تجنب نهائياً استخدام رموز برمجة الرياضيات المعقدة أو رموز LaTeX مثل (\\frac, \\implies, \\$, إلخ). استخدم الكتابة العادية والمبسطة (مثل a/b).
 - لتفادي الخلط بين المتغير x وعلامة الضرب، قم دائماً بتلوين علامة الضرب بلون مختلف هكذا: <span style="color: #ef4444; font-weight: bold;">×</span>، واجعل المتغير x بالإنجليزية ومائلاً هكذا: <i>x</i>.
-- إجباري جداً جداً لمنع تشوه المعادلات: أي عبارة رياضية أو معادلة (مثلاً f(x) = 3 × x) يجب كتابتها داخل وسم لمنع انقسامها على سطرين هكذا: <span dir="ltr" style="white-space: nowrap; display: inline-block; font-family: sans-serif; margin: 0 4px;">العبارة الرياضية هنا</span>. لا تترك العبارات الرياضية بدون هذا الوسم أبداً!
+- إجباري جداً لمنع تشوه المعادلات: أي عبارة رياضية أو معادلة (مثلاً f(x) = 3 × x) يجب كتابتها داخل وسم لمنع انقسامها على سطرين هكذا: <span dir="ltr" style="white-space: nowrap;">العبارة الرياضية هنا</span>. لا تترك العبارات الرياضية بدون هذا الوسم أبداً!
 - يجب الالتزام التام بالمنهاج الدراسي الجزائري في جميع الأطوار والمواد، ولا تخرج عنه أبداً.
 
 التنسيق والألوان (مهم جداً):
@@ -183,24 +192,6 @@ ${mValue ? `(الرجاء إجراء المناقشة الوسيطية إن كا
     }
   });
 
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
+  
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-}
-
-startServer();
+export default app;

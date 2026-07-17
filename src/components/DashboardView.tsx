@@ -52,9 +52,13 @@ export function DashboardView() {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed:", error);
-      setMessage("حدث خطأ أثناء تسجيل الدخول.");
+      if (error.code === 'auth/unauthorized-domain') {
+        setMessage("هذا الرابط غير مصرح له في Firebase. يرجى إضافته في إعدادات Authentication > Authorized domains.");
+      } else {
+        setMessage("حدث خطأ أثناء تسجيل الدخول.");
+      }
     }
   };
 

@@ -56,6 +56,8 @@ export function DashboardView() {
       console.error("Login failed:", error);
       if (error.code === 'auth/unauthorized-domain') {
         setMessage("هذا الرابط غير مصرح له في Firebase. يرجى إضافته في إعدادات Authentication > Authorized domains.");
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        setMessage("تم إلغاء تسجيل الدخول.");
       } else {
         setMessage("حدث خطأ أثناء تسجيل الدخول.");
       }
@@ -81,7 +83,11 @@ export function DashboardView() {
       setProfilePicUrl(url);
       setMessage('تم رفع الصورة بنجاح!');
     } catch (error: any) {
-      setMessage('خطأ في رفع الصورة. تأكد من إعدادات Cloudinary (Upload Preset).');
+      if (error.message && error.message.includes('whitelisted for unsigned uploads')) {
+        setMessage('خطأ: الـ Upload Preset المكتوب غير مصرح له بالرفع المباشر. اذهب إلى Cloudinary -> Settings -> Upload واجعل הـ Signing Mode لـ Preset الخاص بك "Unsigned".');
+      } else {
+        setMessage('خطأ في رفع الصورة. تأكد من إعدادات Cloudinary (Upload Preset).');
+      }
       console.error(error);
     } finally {
       setIsUploading(false);

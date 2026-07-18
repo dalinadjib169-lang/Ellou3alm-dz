@@ -1,5 +1,5 @@
 {
-  "name": "Smart Prof - الأستاذ الجزائري",
+  "name": "Smart Teach - الأستاذ الجزائري",
   "description": "تطبيق الأستاذ الجزائري المساعد. يجيب على الأسئلة بالدارجة والمقاربة بالكفاءات، ويدعم القراءة الصوتية والخرائط الذهنية.",
   "requestFramePermissions": ["speaker"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

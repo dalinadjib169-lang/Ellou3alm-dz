@@ -37,6 +37,7 @@ export function StudentView() {
   const [language, setLanguage] = useState<'AR' | 'FR' | 'EN'>('AR');
   const [welcomeMessage, setWelcomeMessage] = useState('مرحباً ابني/ابنتي، معك الأستاذ دالي نجيب. صلِّ على محمد واطرح سؤالك، سأكون سعيداً بالإجابة عليه.');
   const [teacherPic, setTeacherPic] = useState(defaultTeacherPic);
+  const [studentPic, setStudentPic] = useState('https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -429,7 +430,7 @@ export function StudentView() {
             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-4xl w-full flex items-start gap-4`}>
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden shadow-sm ${msg.role === 'user' ? 'bg-slate-800 text-white border-2 border-slate-700 dark:bg-emerald-600 dark:border-emerald-500' : 'border-2 border-emerald-500 bg-emerald-100 dark:bg-emerald-900/30'}`}>
-                  {msg.role === 'user' ? <User size={20} /> : <img src={teacherPic} alt="الأستاذ" className="w-full h-full object-cover" />}
+                  {msg.role === 'user' ? <img src={studentPic} alt="الطالب" className="w-full h-full object-cover" /> : <img src={teacherPic} alt="الأستاذ" className="w-full h-full object-cover" />}
                 </div>
                 
                 <div className="flex-1 min-w-0">

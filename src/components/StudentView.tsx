@@ -21,6 +21,11 @@ interface ChatSession {
 
 export function StudentView() {
   const [chats, setChats] = useState<ChatSession[]>([]);
+  const [isStartupModalOpen, setIsStartupModalOpen] = useState(false);
+  const [startupMode, setStartupMode] = useState<'suggest' | 'study'>('suggest');
+  const [startupSpecialty, setStartupSpecialty] = useState('');
+  const [startupProject, setStartupProject] = useState('');
+
   const [currentChatId, setCurrentChatId] = useState<string>('');
   
   const [input, setInput] = useState('');
@@ -151,6 +156,64 @@ export function StudentView() {
     scrollToBottom();
   }, [messages]);
 
+
+  const handleStartupSubmit = () => {
+    setIsStartupModalOpen(false);
+    let prompt = '';
+    if (startupMode === 'suggest') {
+      prompt = `مرحباً، أنا طالب جامعي وأريد بناء مؤسسة ناشئة.\nتخصصي هو: ${startupSpecialty}\nيرجى اقتراح أفكار مشاريع مؤسسات ناشئة (Startups) تتناسب مع تخصصي، مع شرح مبسط لكل فكرة.`;
+    } else {
+      prompt = `مرحباً، أنا طالب جامعي ولدي فكرة لمؤسسة ناشئة.\nالفكرة هي: ${startupProject}\nيرجى تقديم دراسة شاملة لمشروعي تتضمن (المخطط العام، دراسة الجدوى، النقاط الإيجابية والسلبية، والتقييم النهائي).`;
+    }
+    
+    const newId = Date.now().toString();
+    const newChat: ChatSession = {
+      id: newId,
+      title: prompt.substring(0, 30) + '...',
+      messages: [{ role: 'user', content: prompt }],
+      stage: 'التعليم الجامعي',
+      level: 'السنة الأولى',
+      updatedAt: Date.now(),
+    };
+    
+    setChats(prev => [newChat, ...prev]);
+    setCurrentChatId(newId);
+    setStage('التعليم الجامعي');
+    setLevel('السنة الأولى');
+    setIsSidebarOpen(false);
+    setInput('');
+    
+    setIsLoading(true);
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: prompt,
+        stage: 'التعليم الجامعي',
+        level: 'السنة الأولى',
+        history: [],
+      }),
+    }).then(async res => {
+      if (!res.ok) throw new Error('فشل الاتصال');
+      const data = await res.json();
+      setChats(prev => prev.map(c => {
+         if (c.id === newId) {
+           return { ...c, messages: [...c.messages, { role: 'model', content: data.reply }], updatedAt: Date.now() };
+         }
+         return c;
+      }));
+    }).catch(err => {
+      setChats(prev => prev.map(c => {
+         if (c.id === newId) {
+           return { ...c, messages: [...c.messages, { role: 'model', content: 'عذراً، حدث خطأ أثناء الاتصال.' }], updatedAt: Date.now() };
+         }
+         return c;
+      }));
+    }).finally(() => {
+      setIsLoading(false);
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -248,98 +311,93 @@ export function StudentView() {
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
         
         {/* Marquee Header */}
-        <div className="w-full bg-slate-950 text-emerald-400 overflow-hidden whitespace-nowrap py-1 text-xs font-bold border-b border-emerald-900 relative shrink-0">
+        <div className="w-full bg-slate-950 text-emerald-400 overflow-hidden whitespace-nowrap py-0.5 text-[10px] font-bold border-b border-emerald-900 relative shrink-0">
           <div className="animate-marquee inline-block">
-            سبحان الله وبحمده، سبحان الله العظيم • اللهم صل وسلم وبارك على نبينا محمد • لا حول ولا قوة إلا بالله • استغفر الله العظيم وأتوب إليه • لا إله إلا الله وحده لا شريك له • حسبنا الله ونعم الوكيل • اللهم إنك عفو تحب العفو فاعف عنا • الحمد لله رب العالمين • سبحان الله وبحمده عدد خلقه ورضا نفسه وزنة عرشه ومداد كلماته • 
+            سبحان الله وبحمده، سبحان الله العظيم • اللهم صل وسلم وبارك على نبينا محمد • لا حول ولا قوة إلا بالله • استغفر الله العظيم وأتوب إليه • لا إله إلا الله وحده لا شريك له • حسبنا الله ونعم الوكيل • اللهم إنك عفو تحب العفو فاعف عنا • الحمد لله رب العالمين • سبحان الله وبحمده عدد خلقه ورضا نفسه وزنة عرشه ومداد كلماته • لا إله إلا أنت سبحانك إني كنت من الظالمين • اللهم آتنا في الدنيا حسنة وفي الآخرة حسنة وقنا عذاب النار • يا مقلب القلوب ثبت قلبي على دينك • أستغفر الله الذي لا إله إلا هو الحي القيوم وأتوب إليه • رضينا بالله ربا وبالإسلام دينا وبمحمد صلى الله عليه وسلم نبيا ورسولا • 
           </div>
         </div>
 
         {/* Header */}
-        <header className="relative overflow-visible flex flex-col md:flex-row justify-between items-start md:items-center p-2 md:p-4 shrink-0 gap-2 bg-slate-100/30 dark:bg-slate-900/50 backdrop-blur-md border-b border-emerald-500/20 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
+        <header className="relative overflow-visible flex flex-col sm:flex-row justify-between items-center p-2 shrink-0 gap-2 bg-slate-100/30 dark:bg-slate-900/50 backdrop-blur-md border-b border-emerald-500/20 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
           <div className="absolute top-0 bottom-0 w-32 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-20deg] animate-shine pointer-events-none" />
           
-          <div className="flex items-center justify-between w-full md:w-auto gap-2 z-10 relative">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between w-full sm:w-auto gap-2 z-10 relative">
+            <div className="flex items-center gap-1.5">
               <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-slate-700 dark:text-slate-300 p-1">
-                <Menu size={20} />
+                <Menu size={18} />
               </button>
               <div>
-                <h1 className="text-2xl md:text-3xl font-serif font-black italic text-[#FFD700] drop-shadow-[0_0_15px_rgba(255,215,0,0.8)] z-10 relative leading-none">Smart Teach <span className="text-white">.</span></h1>
-                <p className="text-slate-500 dark:text-slate-400 mt-0 text-[10px] md:text-xs hidden md:block">التعلم بالمقاربة بالكفاءات - شرح مبسط بالدّارجة</p>
+                <h1 className="text-xl md:text-2xl font-serif font-black italic text-[#FFD700] drop-shadow-[0_0_15px_rgba(255,215,0,0.8)] z-10 relative leading-none">Smart Teach<span className="text-white">.</span></h1>
               </div>
             </div>
             
             {/* Mobile Dark/Lang Toggle */}
-            <div className="flex items-center md:hidden gap-1">
+            <div className="flex items-center sm:hidden gap-1">
               <button
                 onClick={() => setIsDark(!isDark)}
-                className="p-1.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
-                title="تبديل الوضع المظلم"
+                className="p-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
               >
-                {isDark ? <Sun size={16} /> : <Moon size={16} />}
+                {isDark ? <Sun size={14} /> : <Moon size={14} />}
               </button>
               <button
                 onClick={nextLanguage}
-                className="px-2 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors font-bold text-xs"
-                title="تغيير اللغة"
+                className="px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors font-bold text-[10px]"
               >
                 {language}
               </button>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center w-full md:w-auto z-10 relative">
+          <div className="flex flex-row gap-1.5 items-center w-full sm:w-auto z-10 relative">
             <button 
-              onClick={() => createNewChat('التعليم الجامعي', 'السنة الأولى', 'أريد بناء مؤسسة ناشئة، أرشدني خطوة بخطوة...')}
-              className="flex items-center justify-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3 py-1.5 rounded-lg font-bold text-xs hover:from-purple-500 hover:to-indigo-500 transition-all shadow-[0_0_10px_rgba(147,51,234,0.5)] border border-purple-400 whitespace-nowrap"
+              onClick={() => setIsStartupModalOpen(true)}
+              className="flex items-center justify-center gap-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-2 py-1 rounded border border-purple-400 text-[10px] font-bold shadow-sm whitespace-nowrap"
             >
-              <Rocket size={14} /> المؤسسات الناشئة
+              <Rocket size={12} /> <span className="hidden sm:inline">المؤسسات الناشئة</span><span className="sm:hidden">مشاريع</span>
             </button>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <div className="relative w-1/2 sm:w-auto flex-1">
+            <div className="flex items-center gap-1 flex-1 sm:flex-initial">
+              <div className="relative w-1/2 sm:w-28 flex-1">
                 <select 
                   value={stage} 
                   onChange={(e) => {
                     setStage(e.target.value);
                     setLevel('السنة الأولى');
                   }}
-                  className="appearance-none w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs pl-6 pr-2 py-1.5 font-bold cursor-pointer transition-colors outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
+                  className="appearance-none w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] pl-5 pr-1.5 py-1 font-bold cursor-pointer transition-colors outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm"
                 >
                   <option>التعليم الابتدائي</option>
                   <option>التعليم المتوسط</option>
                   <option>التعليم الثانوي</option>
                   <option>التعليم الجامعي</option>
                 </select>
-                <ChevronDown className="absolute left-1.5 top-1/2 -translate-y-1/2 text-emerald-200 pointer-events-none" size={14} />
+                <ChevronDown className="absolute left-1 top-1/2 -translate-y-1/2 text-emerald-200 pointer-events-none" size={12} />
               </div>
-              <div className="relative w-1/2 sm:w-auto flex-1">
+              <div className="relative w-1/2 sm:w-24 flex-1">
                 <select 
                   value={level} 
                   onChange={(e) => setLevel(e.target.value)}
-                  className="appearance-none w-full bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs pl-6 pr-2 py-1.5 font-bold cursor-pointer shadow-sm border border-slate-200 dark:border-slate-700 transition-colors outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="appearance-none w-full bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded text-[10px] pl-5 pr-1.5 py-1 font-bold cursor-pointer shadow-sm border border-slate-200 dark:border-slate-700 transition-colors outline-none focus:ring-1 focus:ring-emerald-500"
                 >
                   {getLevels().map(l => (
                     <option key={l}>{l}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute left-1.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none" size={14} />
+                <ChevronDown className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none" size={12} />
               </div>
             </div>
             
             {/* Desktop Dark/Lang Toggle */}
-            <div className="hidden md:flex items-center gap-1">
+            <div className="hidden sm:flex items-center gap-1">
               <button
                 onClick={() => setIsDark(!isDark)}
-                className="p-1.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
-                title="تبديل الوضع المظلم"
+                className="p-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
               >
-                {isDark ? <Sun size={16} /> : <Moon size={16} />}
+                {isDark ? <Sun size={14} /> : <Moon size={14} />}
               </button>
               <button
                 onClick={nextLanguage}
-                className="px-2 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors font-bold text-xs"
-                title="تغيير اللغة"
+                className="px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors font-bold text-[10px]"
               >
                 {language}
               </button>
@@ -428,6 +486,77 @@ export function StudentView() {
           </form>
         </div>
       </div>
+    
+      {/* Startup Modal */}
+      {isStartupModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4" dir="rtl">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-emerald-500/30 relative">
+            <button onClick={() => setIsStartupModalOpen(false)} className="absolute top-4 left-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+              <X size={24} />
+            </button>
+            
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                <Rocket size={24} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-white">المؤسسات الناشئة</h2>
+                <p className="text-slate-500 dark:text-slate-400 text-sm">أرشدني في رحلتي الريادية</p>
+              </div>
+            </div>
+
+            <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 mb-6">
+              <button
+                onClick={() => setStartupMode('suggest')}
+                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${startupMode === 'suggest' ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+              >
+                اقتراح مشاريع
+              </button>
+              <button
+                onClick={() => setStartupMode('study')}
+                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${startupMode === 'study' ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+              >
+                دراسة مشروعي
+              </button>
+            </div>
+
+            {startupMode === 'suggest' ? (
+              <div className="space-y-4">
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">ما هو تخصصك الجامعي؟</label>
+                <input
+                  type="text"
+                  value={startupSpecialty}
+                  onChange={(e) => setStartupSpecialty(e.target.value)}
+                  placeholder="مثال: إعلام آلي، هندسة معمارية، بيولوجيا..."
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">ما هي فكرة مشروعك؟</label>
+                <textarea
+                  value={startupProject}
+                  onChange={(e) => setStartupProject(e.target.value)}
+                  placeholder="اشرح فكرتك باختصار..."
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-purple-500 min-h-[100px] resize-none"
+                />
+              </div>
+            )}
+
+            <div className="mt-8">
+              <button
+                onClick={handleStartupSubmit}
+                disabled={startupMode === 'suggest' ? !startupSpecialty.trim() : !startupProject.trim()}
+                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+              >
+                <Send size={18} className="rotate-180" />
+                {startupMode === 'suggest' ? 'اقترح علي مشاريع' : 'ادرس مشروعي'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

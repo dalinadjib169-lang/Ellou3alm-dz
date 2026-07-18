@@ -4,6 +4,8 @@ import { Send, User, Loader2, Moon, Sun, ChevronDown, Menu, Plus, Trash2, Rocket
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useDarkMode } from '../hooks/useDarkMode';
+import defaultTeacherPic from '../assets/images/teacher_profile.jpg';
+
 
 interface Message {
   role: 'user' | 'model';
@@ -34,7 +36,7 @@ export function StudentView() {
   const [level, setLevel] = useState('السنة الرابعة');
   const [language, setLanguage] = useState<'AR' | 'FR' | 'EN'>('AR');
   const [welcomeMessage, setWelcomeMessage] = useState('مرحباً ابني/ابنتي، معك الأستاذ دالي نجيب. صلِّ على محمد واطرح سؤالك، سأكون سعيداً بالإجابة عليه.');
-  const [teacherPic, setTeacherPic] = useState('https://api.dicebear.com/7.x/avataaars/svg?seed=Teacher');
+  const [teacherPic, setTeacherPic] = useState(defaultTeacherPic);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -131,7 +133,7 @@ export function StudentView() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data.welcomeMessage) setWelcomeMessage(data.welcomeMessage);
-          if (data.profilePicUrl) setTeacherPic(data.profilePicUrl);
+          if (data.profilePicUrl && !data.profilePicUrl.includes('dicebear')) setTeacherPic(data.profilePicUrl);
         }
       } catch (error: any) {
         if (error.code !== 'unavailable') {

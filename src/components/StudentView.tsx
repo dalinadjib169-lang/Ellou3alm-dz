@@ -5,6 +5,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useDarkMode } from '../hooks/useDarkMode';
 import defaultTeacherPic from '../assets/images/teacher_profile.jpg';
+import defaultStudentPic from '../assets/images/student_profile.jpg';
 
 
 interface Message {
@@ -37,7 +38,7 @@ export function StudentView() {
   const [language, setLanguage] = useState<'AR' | 'FR' | 'EN'>('AR');
   const [welcomeMessage, setWelcomeMessage] = useState('مرحباً ابني/ابنتي، معك الأستاذ دالي نجيب. صلِّ على محمد واطرح سؤالك، سأكون سعيداً بالإجابة عليه.');
   const [teacherPic, setTeacherPic] = useState(defaultTeacherPic);
-  const [studentPic, setStudentPic] = useState('https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4');
+  const [studentPic, setStudentPic] = useState(defaultStudentPic);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -414,7 +415,7 @@ export function StudentView() {
             <div className="flex justify-center w-full">
               <div className="max-w-4xl w-full flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full border-2 border-emerald-500 bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
-                  <img src={teacherPic} alt="الأستاذ" className="w-full h-full object-cover" />
+                  <img src={teacherPic} alt="الأستاذ" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultTeacherPic; }} />
                 </div>
                 <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 md:p-6 shadow-sm border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-200 text-lg leading-loose relative">
                   <div className="absolute top-0 right-0 p-4">
@@ -430,7 +431,7 @@ export function StudentView() {
             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-4xl w-full flex items-start gap-4`}>
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden shadow-sm ${msg.role === 'user' ? 'bg-slate-800 text-white border-2 border-slate-700 dark:bg-emerald-600 dark:border-emerald-500' : 'border-2 border-emerald-500 bg-emerald-100 dark:bg-emerald-900/30'}`}>
-                  {msg.role === 'user' ? <img src={studentPic} alt="الطالب" className="w-full h-full object-cover" /> : <img src={teacherPic} alt="الأستاذ" className="w-full h-full object-cover" />}
+                  {msg.role === 'user' ? <img src={studentPic} alt="الطالب" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultStudentPic; }} /> : <img src={teacherPic} alt="الأستاذ" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultTeacherPic; }} />}
                 </div>
                 
                 <div className="flex-1 min-w-0">
@@ -450,7 +451,7 @@ export function StudentView() {
             <div className="flex justify-center w-full">
               <div className="max-w-4xl w-full flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full border-2 border-emerald-500 bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
-                  <img src={teacherPic} alt="الأستاذ" className="w-full h-full object-cover" />
+                  <img src={teacherPic} alt="الأستاذ" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultTeacherPic; }} />
                 </div>
                 <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 md:p-6 shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-3 text-emerald-600 dark:text-emerald-400 font-medium">
                   <Loader2 className="animate-spin" size={24} />

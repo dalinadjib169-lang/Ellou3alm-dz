@@ -203,7 +203,7 @@ export function DashboardView() {
             <div className="flex flex-col sm:flex-row items-center gap-6 bg-[#F9FBFC] p-6 rounded-2xl border border-slate-200 shadow-sm">
               <div className="w-24 h-24 rounded-full bg-white border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden shrink-0">
                 {profilePicUrl ? (
-                  <img src={profilePicUrl} alt="Profile" className="w-full h-full object-cover" />
+                  <img src={profilePicUrl} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = defaultTeacherPic; }} />
                 ) : (
                   <ImageIcon className="text-gray-400" size={32} />
                 )}

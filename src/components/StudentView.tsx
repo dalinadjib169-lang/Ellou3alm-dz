@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { Send, User, Loader2, Moon, Sun, ChevronDown, Menu, Plus, Trash2, Rocket, X, Hammer, LogOut } from 'lucide-react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { db } from '../lib/firebase';
@@ -47,6 +48,13 @@ export function StudentView({ user }: StudentViewProps) {
   const [questionsUsed, setQuestionsUsed] = useState(0);
   const [questionsLimit, setQuestionsLimit] = useState(10);
   const [showAdModal, setShowAdModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordChangeStep, setPasswordChangeStep] = useState(0); // 0: input old pass to re-auth, 1: send code, 2: enter code, 3: enter new password
+  const [verificationCode, setVerificationCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [profileMsg, setProfileMsg] = useState({ type: '', text: '' });
   const [language, setLanguage] = useState<'AR' | 'FR' | 'EN'>('AR');
   const [welcomeMessage, setWelcomeMessage] = useState('مرحباً ابني/ابنتي، معك الأستاذ دالي نجيب. صلِّ على محمد واطرح سؤالك، سأكون سعيداً بالإجابة عليه.');
   const [teacherPic, setTeacherPic] = useState(defaultTeacherPic);
@@ -384,8 +392,185 @@ export function StudentView({ user }: StudentViewProps) {
     }
   };
 
-  return (
+  
+  const handlePasswordChangeSubmit = async () => {
+    setProfileMsg({ type: '', text: '' });
+    if (passwordChangeStep === 1) {
+      if (verificationCode !== '1234') {
+        setProfileMsg({ type: 'error', text: 'الكود خاطئ. (للتجربة أدخل 1234)' });
+        return;
+      }
+      setPasswordChangeStep(2);
+    } else if (passwordChangeStep === 2) {
+      if (newPassword !== confirmPassword) {
+        setProfileMsg({ type: 'error', text: 'كلمات المرور غير متطابقة' });
+        return;
+      }
+      if (newPassword.length < 6) {
+        setProfileMsg({ type: 'error', text: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' });
+        return;
+      }
+      try {
+        if (user) {
+          await updatePassword(user, newPassword);
+          setProfileMsg({ type: 'success', text: 'تم تغيير كلمة المرور بنجاح' });
+          setTimeout(() => {
+            setIsChangingPassword(false);
+            setPasswordChangeStep(0);
+            setNewPassword('');
+            setConfirmPassword('');
+            setVerificationCode('');
+            setProfileMsg({ type: '', text: '' });
+          }, 3000);
+        }
+      } catch (err: any) {
+        if (err.code === 'auth/requires-recent-login') {
+           setProfileMsg({ type: 'error', text: 'يجب تسجيل الخروج والدخول مجدداً لتغيير كلمة المرور لدواعي أمنية.' });
+        } else {
+           setProfileMsg({ type: 'error', text: err.message || 'حدث خطأ أثناء تغيير كلمة المرور' });
+        }
+      }
+    }
+  };
+
+  const handleRequestCode = async () => {
+    setProfileMsg({ type: 'success', text: 'تم إرسال كود من 4 أرقام (للتجربة أدخل 1234)' });
+    setPasswordChangeStep(1);
+  };
+
+return (
     <>
+    {showProfileModal && (
+      <div className="fixed inset-0 z-[100] bg-black/80 flex justify-center items-center p-4 backdrop-blur-sm" dir="rtl">
+        <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-800/50">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <User size={24} className="text-emerald-500" />
+              لوحة التلميذ
+            </h2>
+            <button onClick={() => setShowProfileModal(false)} className="text-slate-400 hover:text-white transition-colors">
+              <X size={24} />
+            </button>
+          </div>
+          
+          <div className="p-6 overflow-y-auto">
+            <div className="flex flex-col items-center mb-6">
+              <div className="w-20 h-20 rounded-full bg-slate-800 border-4 border-emerald-500 flex items-center justify-center text-4xl mb-3 shadow-lg shadow-emerald-500/20">
+                🎓
+              </div>
+              <h3 className="text-2xl font-bold text-white">{studentName}</h3>
+              <p className="text-slate-400 text-sm mt-1">{user?.email || 'بدون بريد'}</p>
+              
+              <div className="mt-4 flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-full border border-slate-700">
+                <span className="text-emerald-400 font-bold">{questionsLimit - questionsUsed}</span>
+                <span className="text-slate-300 text-sm">أسئلة متبقية</span>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-800 pt-6 space-y-4">
+              {!isChangingPassword ? (
+                <>
+                  <button 
+                    onClick={() => setIsChangingPassword(true)}
+                    className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white rounded-xl transition-colors font-medium flex justify-between items-center"
+                  >
+                    تغيير كلمة السر
+                    <ChevronDown size={18} className="transform -rotate-90" />
+                  </button>
+                  <button 
+                    onClick={() => { signOut(auth); setShowProfileModal(false); }}
+                    className="w-full py-3 px-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-500 rounded-xl transition-colors font-bold flex justify-center items-center gap-2"
+                  >
+                    <LogOut size={20} />
+                    تسجيل الخروج
+                  </button>
+                </>
+              ) : (
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                  <h4 className="font-bold text-white mb-4">تغيير كلمة السر</h4>
+                  
+                  {profileMsg.text && (
+                    <div className={`p-3 rounded-lg mb-4 text-sm ${profileMsg.type === 'error' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
+                      {profileMsg.text}
+                    </div>
+                  )}
+
+                  {passwordChangeStep === 0 && (
+                    <div className="space-y-4">
+                      <p className="text-sm text-slate-300">لتغيير كلمة السر، سنقوم بإرسال كود تأكيد إلى وسيلة الاتصال الخاصة بك.</p>
+                      <button 
+                        onClick={handleRequestCode}
+                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors font-bold"
+                      >
+                        إرسال الكود
+                      </button>
+                    </div>
+                  )}
+
+                  {passwordChangeStep === 1 && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm text-slate-400 mb-1">أدخل الكود (4 أرقام)</label>
+                        <input 
+                          type="text" 
+                          maxLength={4}
+                          value={verificationCode}
+                          onChange={e => setVerificationCode(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 text-center text-xl tracking-widest focus:ring-2 focus:ring-emerald-500 outline-none"
+                          placeholder="••••"
+                        />
+                      </div>
+                      <button 
+                        onClick={handlePasswordChangeSubmit}
+                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors font-bold"
+                      >
+                        تأكيد الكود
+                      </button>
+                    </div>
+                  )}
+
+                  {passwordChangeStep === 2 && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm text-slate-400 mb-1">كلمة السر الجديدة</label>
+                        <input 
+                          type="password" 
+                          value={newPassword}
+                          onChange={e => setNewPassword(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-slate-400 mb-1">تأكيد كلمة السر</label>
+                        <input 
+                          type="password" 
+                          value={confirmPassword}
+                          onChange={e => setConfirmPassword(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none"
+                        />
+                      </div>
+                      <button 
+                        onClick={handlePasswordChangeSubmit}
+                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors font-bold"
+                      >
+                        حفظ كلمة السر الجديدة
+                      </button>
+                    </div>
+                  )}
+
+                  <button 
+                    onClick={() => { setIsChangingPassword(false); setPasswordChangeStep(0); setProfileMsg({type:'', text:''}); }}
+                    className="w-full mt-3 py-2 text-slate-400 hover:text-white transition-colors text-sm"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
     {showAdModal && (
       <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4" dir="rtl">
         <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl">

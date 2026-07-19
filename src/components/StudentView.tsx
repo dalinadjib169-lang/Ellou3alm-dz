@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MarkdownRenderer } from './MarkdownRenderer';
-import { Send, User, Loader2, Moon, Sun, ChevronDown, Menu, Plus, Trash2, Rocket, X } from 'lucide-react';
-import { doc, getDoc } from 'firebase/firestore';
+import { Send, User, Loader2, Moon, Sun, ChevronDown, Menu, Plus, Trash2, Rocket, X, Hammer, LogOut } from 'lucide-react';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+import { auth } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { useDarkMode } from '../hooks/useDarkMode';
 import defaultTeacherPic from '../assets/images/teacher_profile.jpg';
@@ -22,9 +24,15 @@ interface ChatSession {
   updatedAt: number;
 }
 
-export function StudentView() {
+interface StudentViewProps {
+  user?: any;
+}
+
+export function StudentView({ user }: StudentViewProps) {
   const [chats, setChats] = useState<ChatSession[]>([]);
   const [isStartupModalOpen, setIsStartupModalOpen] = useState(false);
+  const [isCraftModalOpen, setIsCraftModalOpen] = useState(false);
+  const [craftSpecialty, setCraftSpecialty] = useState('');
   const [startupMode, setStartupMode] = useState<'suggest' | 'study'>('suggest');
   const [startupSpecialty, setStartupSpecialty] = useState('');
   const [startupProject, setStartupProject] = useState('');
@@ -35,6 +43,10 @@ export function StudentView() {
   const [isLoading, setIsLoading] = useState(false);
   const [stage, setStage] = useState('التعليم المتوسط');
   const [level, setLevel] = useState('السنة الرابعة');
+  const [studentName, setStudentName] = useState('التلميذ');
+  const [questionsUsed, setQuestionsUsed] = useState(0);
+  const [questionsLimit, setQuestionsLimit] = useState(10);
+  const [showAdModal, setShowAdModal] = useState(false);
   const [language, setLanguage] = useState<'AR' | 'FR' | 'EN'>('AR');
   const [welcomeMessage, setWelcomeMessage] = useState('مرحباً ابني/ابنتي، معك الأستاذ دالي نجيب. صلِّ على محمد واطرح سؤالك، سأكون سعيداً بالإجابة عليه.');
   const [teacherPic, setTeacherPic] = useState(defaultTeacherPic);
@@ -44,9 +56,35 @@ export function StudentView() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isDark, setIsDark] = useDarkMode();
 
-  // Load chats from localStorage
+
+  // Load user profile from Firestore
   useEffect(() => {
-    const savedChats = localStorage.getItem('smartTeachChats');
+    const fetchUserData = async () => {
+      if (user?.uid) {
+        try {
+          const docRef = doc(db, 'students', user.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.name) setStudentName(data.name);
+            if (data.stage) setStage(data.stage);
+            if (data.level) setLevel(data.level);
+            if (data.questionsUsed !== undefined) setQuestionsUsed(data.questionsUsed);
+            if (data.questionsLimit !== undefined) setQuestionsLimit(data.questionsLimit);
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+      }
+    };
+    fetchUserData();
+  }, [user]);
+
+  // Load chats from localStorage
+
+  useEffect(() => {
+    const chatKey = user?.uid ? `smartTeachChats_${user.uid}` : 'smartTeachChats';
+    const savedChats = localStorage.getItem(chatKey);
     if (savedChats) {
       const parsedChats = JSON.parse(savedChats);
       setChats(parsedChats);
@@ -63,7 +101,8 @@ export function StudentView() {
   // Save chats to localStorage whenever they change
   useEffect(() => {
     if (chats.length > 0) {
-      localStorage.setItem('smartTeachChats', JSON.stringify(chats));
+      const chatKey = user?.uid ? `smartTeachChats_${user.uid}` : 'smartTeachChats';
+      localStorage.setItem(chatKey, JSON.stringify(chats));
     }
   }, [chats]);
 
@@ -161,13 +200,65 @@ export function StudentView() {
   }, [messages]);
 
 
+
+  const handleCraftSubmit = () => {
+    setIsCraftModalOpen(false);
+    const prompt = `أنا حرفي/بطال مهنتي أو اختصاصي هو: ${craftSpecialty}\nيرجى اقتراح أحسن المشاريع الناجحة في الجزائر التي تتناسب مع حرفتي برأس مال صغير.\nلكل مشروع مقترح، قدم دراسة شاملة تتضمن: الفئة المستهدفة، المداخيل والمصاريف التقريبية، والعوائق المتوقعة لكل مشروع.`;
+    
+    const newId = Date.now().toString();
+    const newChat: ChatSession = {
+      id: newId,
+      title: 'مشاريع الحرفي: ' + craftSpecialty,
+      messages: [{ role: 'user', content: prompt }],
+      stage: 'أصحاب الحرف',
+      level: 'عام',
+      updatedAt: Date.now(),
+    };
+    
+    setChats(prev => [newChat, ...prev]);
+    setCurrentChatId(newId);
+    setStage('أصحاب الحرف');
+    setLevel('عام');
+    setIsSidebarOpen(false);
+    setInput('');
+    
+    setIsLoading(true);
+    
+    fetch('/api/gemini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }] }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        setChats(prev => prev.map(chat => {
+          if (chat.id === newId) {
+            return { ...chat, messages: [...chat.messages, { role: 'model', content: data.text }] };
+          }
+          return chat;
+        }));
+      })
+      .catch(err => {
+        console.error(err);
+        setChats(prev => prev.map(chat => {
+          if (chat.id === newId) {
+            return { ...chat, messages: [...chat.messages, { role: 'model', content: "عذراً، حدث خطأ أثناء معالجة طلبك." }] };
+          }
+          return chat;
+        }));
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
+
   const handleStartupSubmit = () => {
     setIsStartupModalOpen(false);
     let prompt = '';
     if (startupMode === 'suggest') {
-      prompt = `مرحباً، أنا طالب جامعي وأريد بناء مؤسسة ناشئة.\nتخصصي هو: ${startupSpecialty}\nيرجى اقتراح أفكار مشاريع مؤسسات ناشئة (Startups) تتناسب مع تخصصي، مع شرح مبسط لكل فكرة.`;
+      prompt = `أنا طالب جامعي وأريد بناء مؤسسة ناشئة.\nتخصصي هو: ${startupSpecialty}\nيرجى اقتراح عدة خيارات لمشاريع مؤسسات ناشئة (Startups) مطلوبة وناجحة في السوق الجزائري تتناسب مع تخصصي، مع شرح مفصل لفكرة كل مشروع. يرجى توضيح القيمة الاقتصادية المرجوة، الفئة المستهدفة، العوائق، استراتيجيات العمل القانوني، والمخرجات والمداخيل لكل مشروع مقترح.`;
     } else {
-      prompt = `مرحباً، أنا طالب جامعي ولدي فكرة لمؤسسة ناشئة.\nالفكرة هي: ${startupProject}\nيرجى تقديم دراسة شاملة لمشروعي تتضمن (المخطط العام، دراسة الجدوى، النقاط الإيجابية والسلبية، والتقييم النهائي).`;
+      prompt = `أنا طالب جامعي ولدي فكرة لمؤسسة ناشئة.\nالفكرة هي: ${startupProject}\nيرجى تقديم دراسة شاملة لمشروعي ليكون مشروع ناجح 100%، تتضمن: المخطط العام، دراسة الجدوى، القيمة الاقتصادية المرجوة، الفئة المستهدفة، العوائق المحتملة، استراتيجيات العمل القانوني، المخرجات والمداخيل، والنقاط الإيجابية والسلبية، والتقييم النهائي.`;
     }
     
     const newId = Date.now().toString();
@@ -188,6 +279,11 @@ export function StudentView() {
     setInput('');
     
     setIsLoading(true);
+    
+    if (questionsUsed >= questionsLimit) {
+      setShowAdModal(true);
+      return;
+    }
     fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -200,6 +296,14 @@ export function StudentView() {
     }).then(async res => {
       if (!res.ok) throw new Error('فشل الاتصال');
       const data = await res.json();
+      
+      // Update limits
+      const newUsed = questionsUsed + 1;
+      setQuestionsUsed(newUsed);
+      if (user?.uid) {
+        updateDoc(doc(db, 'students', user.uid), { questionsUsed: newUsed }).catch(e => console.error(e));
+      }
+
       setChats(prev => prev.map(c => {
          if (c.id === newId) {
            return { ...c, messages: [...c.messages, { role: 'model', content: data.reply }], updatedAt: Date.now() };
@@ -221,6 +325,11 @@ export function StudentView() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+
+    if (questionsUsed >= questionsLimit) {
+      setShowAdModal(true);
+      return;
+    }
 
     const userMessage = input.trim();
     setInput('');
@@ -248,6 +357,15 @@ export function StudentView() {
 
       const data = await response.json();
       updateCurrentChatMessages([...newMessages, { role: 'model', content: data.reply }]);
+      
+      // Update limits
+      const newUsed = questionsUsed + 1;
+      setQuestionsUsed(newUsed);
+      if (user?.uid) {
+        try {
+          await updateDoc(doc(db, 'students', user.uid), { questionsUsed: newUsed });
+        } catch (e) { console.error("Error updating credits", e); }
+      }
     } catch (error: any) {
       console.error(error);
       updateCurrentChatMessages([...newMessages, { role: 'model', content: error?.message || 'عذراً، حدث خطأ أثناء الاتصال. يرجى المحاولة مرة أخرى.' }]);
@@ -267,6 +385,46 @@ export function StudentView() {
   };
 
   return (
+    <>
+    {showAdModal && (
+      <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4" dir="rtl">
+        <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">⚠️</span>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">نفذ رصيدك المجاني</h3>
+            <p className="text-slate-400 text-sm">
+              لقد استهلكت جميع أسئلتك ({questionsLimit}/{questionsLimit}).
+              <br/><br/>
+              شاهد إعلاناً قصيراً للحصول على 10 أسئلة إضافية مجاناً.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => {
+                // Placeholder for ad logic. For now, simulate adding limits.
+                const newLimit = questionsLimit + 10;
+                setQuestionsLimit(newLimit);
+                if (user?.uid) {
+                  updateDoc(doc(db, 'students', user.uid), { questionsLimit: newLimit });
+                }
+                setShowAdModal(false);
+              }}
+              className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+            >
+              شاهد الإعلان
+            </button>
+            <button 
+              onClick={() => setShowAdModal(false)}
+              className="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-colors"
+            >
+              إلغاء
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     <div className="flex h-full bg-[#F9FBFC] dark:bg-slate-950 text-[#1A1A1A] dark:text-slate-100 font-sans text-right overflow-hidden transition-colors duration-300 border-4 border-emerald-400 shadow-[inset_0_0_20px_rgba(52,211,153,0.5),0_0_20px_rgba(52,211,153,0.5)] relative" dir="rtl">
       
       {/* Sidebar Overlay */}
@@ -492,6 +650,42 @@ export function StudentView() {
       </div>
     
       {/* Startup Modal */}
+      
+      {isCraftModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm rtl">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl w-full max-w-md overflow-hidden relative">
+            <button onClick={() => setIsCraftModalOpen(false)} className="absolute top-4 left-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+              <X size={24} />
+            </button>
+            
+            <div className="p-8">
+              <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-6 text-center">أصحاب الحرف والبطالين</h2>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 text-right">ما هي حرفتك أو اختصاصك؟</label>
+                <input 
+                  type="text" 
+                  value={craftSpecialty}
+                  onChange={(e) => setCraftSpecialty(e.target.value)}
+                  placeholder="مثال: نجارة، حلاقة، خياطة..."
+                  className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark:bg-slate-900 dark:text-white text-right"
+                  dir="rtl"
+                />
+              </div>
+
+              <button 
+                onClick={handleCraftSubmit}
+                disabled={!craftSpecialty.trim() || isLoading}
+                className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white font-bold py-3 rounded-xl hover:opacity-90 disabled:opacity-50 transition-all shadow-md flex items-center justify-center gap-2"
+              >
+                {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Hammer size={20} />}
+                اقتراح مشاريع تناسبني
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isStartupModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4" dir="rtl">
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-emerald-500/30 relative">
@@ -562,5 +756,6 @@ export function StudentView() {
       )}
 
     </div>
+    </>
   );
 }

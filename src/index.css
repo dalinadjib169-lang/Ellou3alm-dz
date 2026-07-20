@@ -133,3 +133,12 @@ html, body {
   -webkit-text-fill-color: transparent;
   animation: gold-shine 3s linear infinite;
 }
+
+@keyframes marquee-reverse {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100vw); }
+}
+
+.animate-marquee-reverse {
+  animation: marquee-reverse 40s linear infinite;
+}

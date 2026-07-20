@@ -312,6 +312,7 @@ export function StudentView({ user }: StudentViewProps) {
         stage: 'التعليم الجامعي',
         level: 'السنة الأولى',
         history: [],
+        language
       }),
     }).then(async res => {
       if (!res.ok) throw new Error('فشل الاتصال');
@@ -368,6 +369,7 @@ export function StudentView({ user }: StudentViewProps) {
           stage,
           level,
           history: messages,
+          language
         }),
       });
 
@@ -668,14 +670,14 @@ return (
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
         
         {/* Marquee Header */}
-        <div className="w-full bg-slate-950 text-emerald-400 overflow-hidden whitespace-nowrap py-0.5 text-[10px] font-bold border-b border-emerald-900 relative shrink-0">
-          <div className="animate-marquee inline-block">
+        <div className="w-full bg-black text-[#FFD700] overflow-hidden whitespace-nowrap py-0.5 text-[10px] font-bold border-y border-[#b8860b] relative shrink-0 shadow-[0_0_10px_rgba(255,215,0,0.2)]">
+          <div className="animate-marquee-reverse inline-block">
             سبحان الله وبحمده، سبحان الله العظيم • اللهم صل وسلم وبارك على نبينا محمد • لا حول ولا قوة إلا بالله • استغفر الله العظيم وأتوب إليه • لا إله إلا الله وحده لا شريك له • حسبنا الله ونعم الوكيل • اللهم إنك عفو تحب العفو فاعف عنا • الحمد لله رب العالمين • سبحان الله وبحمده عدد خلقه ورضا نفسه وزنة عرشه ومداد كلماته • لا إله إلا أنت سبحانك إني كنت من الظالمين • اللهم آتنا في الدنيا حسنة وفي الآخرة حسنة وقنا عذاب النار • يا مقلب القلوب ثبت قلبي على دينك • أستغفر الله الذي لا إله إلا هو الحي القيوم وأتوب إليه • رضينا بالله ربا وبالإسلام دينا وبمحمد صلى الله عليه وسلم نبيا ورسولا • 
           </div>
         </div>
 
         {/* Header */}
-        <header className="relative overflow-visible flex flex-col sm:flex-row justify-between items-center p-2 shrink-0 gap-2 bg-slate-100/30 dark:bg-slate-900/50 backdrop-blur-md border-b border-emerald-500/20 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
+        <header className="relative overflow-visible flex flex-col sm:flex-row justify-between items-center p-2 shrink-0 gap-2 bg-slate-100/10 dark:bg-slate-900/20 backdrop-blur-sm border-b border-emerald-500/10 shadow-[0_4px_30px_rgba(0,0,0,0.05)]">
           <div className="absolute top-0 bottom-0 w-32 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-20deg] animate-shine pointer-events-none" />
           
           <div className="flex items-center justify-between w-full sm:w-auto gap-2 z-10 relative">
@@ -774,7 +776,7 @@ return (
                   <div className="absolute top-0 right-0 p-4">
                     <span className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold px-3 py-1 rounded-full uppercase">ترحيب</span>
                   </div>
-                  <div className="mt-4">{welcomeMessage}</div>
+                  <div className="mt-4">{welcomeMessage.replace(/Smart prof/gi, 'pro dali ai')}</div>
                 </div>
               </div>
             </div>

@@ -1,3 +1,4 @@
+import logoImg from '../assets/images/pro_dali_ai_logo_1784536036157.jpg';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bot } from 'lucide-react';
@@ -39,18 +40,29 @@ export function LoadingScreen({ onComplete }: { onComplete: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-900 text-white" dir="rtl">
+<div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        {[...Array(20)].map((_, i) => (
+          <div 
+            key={i} 
+            className="absolute text-emerald-500/10 font-mono text-4xl symbol-float"
+            style={{
+              left: `${Math.random() * 100}%`,
+              bottom: `-${Math.random() * 20 + 10}%`,
+              animationDelay: `${Math.random() * 20}s`,
+              animationDuration: `${Math.random() * 10 + 15}s`
+            }}
+          >
+            {['∑', '∫', 'π', '∞', '∆', 'Ω', 'μ', 'θ', '√', 'E=mc²', 'H₂O', 'O₂', 'CO₂', '⚡', '⚛', 'DNA'][Math.floor(Math.random() * 16)]}
+          </div>
+        ))}
+      </div>
       {/* App Logo Placeholder */}
       <div className="mb-12 flex flex-col items-center">
-        <div className="w-28 h-28 bg-[#0f172a] rounded-3xl flex items-center justify-center shadow-[0_0_40px_rgba(52,211,153,0.4)] mb-6 relative overflow-hidden border-4 border-emerald-500/20">
-           <Bot size={60} className="text-emerald-400" />
-           <div className="absolute top-2 right-2 bg-white rounded overflow-hidden w-8 h-5 shadow-md flex flex-col transform rotate-12">
-             <div className="h-1/2 w-full bg-green-600"></div>
-             <div className="h-1/2 w-full bg-white flex items-center justify-center relative">
-               <span className="text-[6px] text-red-500 leading-none absolute" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>☪</span>
-             </div>
-           </div>
+        <div className="w-32 h-32 bg-[#0f172a] rounded-3xl flex items-center justify-center shadow-[0_0_40px_rgba(255,215,0,0.3)] mb-6 relative overflow-hidden border-4 border-amber-500/20">
+           <img src={logoImg} alt="pro dali ai logo" className="w-full h-full object-cover" />
+           <div className="absolute bottom-0 right-0 text-3xl drop-shadow-md transform translate-x-1/4 translate-y-1/4 z-20">🇩🇿</div>
         </div>
-        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-300">Smart Teach</h1>
+        <h1 className="text-3xl font-serif font-black italic gold-text-shiny drop-shadow-[0_0_15px_rgba(255,215,0,0.3)]">pro dali ai</h1>
         <p className="text-emerald-500/70 text-sm mt-1">ذكاء اصطناعي يساعد التلاميذ</p>
       </div>
 

@@ -92,7 +92,12 @@ export function StudentView({ user }: StudentViewProps) {
 
   useEffect(() => {
     const chatKey = user?.uid ? `smartTeachChats_${user.uid}` : 'smartTeachChats';
-    const savedChats = localStorage.getItem(chatKey);
+    let savedChats = null;
+    try {
+      savedChats = localStorage.getItem(chatKey);
+    } catch (e) {
+      console.warn("localStorage is not available");
+    }
     if (savedChats) {
       const parsedChats = JSON.parse(savedChats);
       setChats(parsedChats);
@@ -110,7 +115,11 @@ export function StudentView({ user }: StudentViewProps) {
   useEffect(() => {
     if (chats.length > 0) {
       const chatKey = user?.uid ? `smartTeachChats_${user.uid}` : 'smartTeachChats';
-      localStorage.setItem(chatKey, JSON.stringify(chats));
+      try {
+        localStorage.setItem(chatKey, JSON.stringify(chats));
+      } catch (e) {
+        console.warn("Could not save to localStorage", e);
+      }
     }
   }, [chats]);
 
@@ -119,7 +128,7 @@ export function StudentView({ user }: StudentViewProps) {
 
   const createNewChat = (customStage = stage, customLevel = level, starterMessage?: string) => {
     const newChat: ChatSession = {
-      id: Date.now().toString(),
+      id: Date.now().toString() + Math.random().toString(36).substring(7),
       title: 'محادثة جديدة',
       messages: [],
       stage: customStage,
@@ -154,7 +163,10 @@ export function StudentView({ user }: StudentViewProps) {
       createNewChat();
     }
     if (newChats.length === 0) {
-      localStorage.removeItem('smartTeachChats');
+      try {
+        localStorage.removeItem('smartTeachChats');
+        if (user?.uid) localStorage.removeItem(`smartTeachChats_${user.uid}`);
+      } catch (e) {}
     }
   };
 
@@ -213,7 +225,7 @@ export function StudentView({ user }: StudentViewProps) {
     setIsCraftModalOpen(false);
     const prompt = `أنا حرفي/بطال مهنتي أو اختصاصي هو: ${craftSpecialty}\nيرجى اقتراح أحسن المشاريع الناجحة في الجزائر التي تتناسب مع حرفتي برأس مال صغير.\nلكل مشروع مقترح، قدم دراسة شاملة تتضمن: الفئة المستهدفة، المداخيل والمصاريف التقريبية، والعوائق المتوقعة لكل مشروع.`;
     
-    const newId = Date.now().toString();
+    const newId = Date.now().toString() + Math.random().toString(36).substring(7);
     const newChat: ChatSession = {
       id: newId,
       title: 'مشاريع الحرفي: ' + craftSpecialty,
@@ -269,7 +281,7 @@ export function StudentView({ user }: StudentViewProps) {
       prompt = `أنا طالب جامعي ولدي فكرة لمؤسسة ناشئة.\nالفكرة هي: ${startupProject}\nيرجى تقديم دراسة شاملة لمشروعي ليكون مشروع ناجح 100%، تتضمن: المخطط العام، دراسة الجدوى، القيمة الاقتصادية المرجوة، الفئة المستهدفة، العوائق المحتملة، استراتيجيات العمل القانوني، المخرجات والمداخيل، والنقاط الإيجابية والسلبية، والتقييم النهائي.`;
     }
     
-    const newId = Date.now().toString();
+    const newId = Date.now().toString() + Math.random().toString(36).substring(7);
     const newChat: ChatSession = {
       id: newId,
       title: prompt.substring(0, 30) + '...',
@@ -370,9 +382,7 @@ export function StudentView({ user }: StudentViewProps) {
       const newUsed = questionsUsed + 1;
       setQuestionsUsed(newUsed);
       if (user?.uid) {
-        try {
-          await updateDoc(doc(db, 'students', user.uid), { questionsUsed: newUsed });
-        } catch (e) { console.error("Error updating credits", e); }
+        updateDoc(doc(db, 'students', user.uid), { questionsUsed: newUsed }).catch(e => console.error("Error updating credits", e));
       }
     } catch (error: any) {
       console.error(error);
@@ -674,7 +684,7 @@ return (
                 <Menu size={18} />
               </button>
               <div>
-                <h1 className="text-xl md:text-2xl font-serif font-black italic text-[#FFD700] drop-shadow-[0_0_15px_rgba(255,215,0,0.8)] z-10 relative leading-none">Smart Teach<span className="text-white">.</span></h1>
+                <h1 className="text-xl md:text-2xl font-serif font-black italic gold-text-shiny drop-shadow-[0_0_15px_rgba(255,215,0,0.8)] z-10 relative leading-none">pro dali ai</h1>
               </div>
             </div>
             

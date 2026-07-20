@@ -79,3 +79,57 @@ html, body {
   animation: shine 4s infinite linear;
 }
 
+
+@keyframes float-symbol {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+  20% { opacity: 0.5; }
+  80% { opacity: 0.5; }
+  100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+}
+
+.symbol-float {
+  animation: float-symbol 20s linear infinite;
+}
+
+@keyframes gold-shine {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+.gold-text-shiny {
+  background: linear-gradient(to right, #b8860b 20%, #ffd700 40%, #ffd700 60%, #b8860b 80%);
+  background-size: 200% auto;
+  color: #000;
+  background-clip: text;
+  text-fill-color: transparent;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gold-shine 3s linear infinite;
+}
+
+@keyframes float-symbol {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+  20% { opacity: 0.5; }
+  80% { opacity: 0.5; }
+  100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+}
+
+.symbol-float {
+  animation: float-symbol 20s linear infinite;
+}
+
+@keyframes gold-shine {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+.gold-text-shiny {
+  background: linear-gradient(to right, #b8860b 20%, #ffd700 40%, #ffd700 60%, #b8860b 80%);
+  background-size: 200% auto;
+  color: #000;
+  background-clip: text;
+  text-fill-color: transparent;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gold-shine 3s linear infinite;
+}

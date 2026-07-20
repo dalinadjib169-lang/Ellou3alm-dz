@@ -1,3 +1,4 @@
+import logoImg from '../assets/images/pro_dali_ai_logo_1784536036157.jpg';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Eye, EyeOff, Mail, Lock, User, BookOpen, GraduationCap, Phone, CheckCircle2, Bot } from 'lucide-react';
@@ -128,21 +129,32 @@ export function StudentAuthView({ onLogin }: StudentAuthProps) {
       {/* Background blobs */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-emerald-500/20 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-cyan-500/20 rounded-full blur-[100px] pointer-events-none" />
+<div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        {[...Array(20)].map((_, i) => (
+          <div 
+            key={i} 
+            className="absolute text-emerald-500/10 font-mono text-4xl symbol-float"
+            style={{
+              left: `${Math.random() * 100}%`,
+              bottom: `-${Math.random() * 20 + 10}%`,
+              animationDelay: `${Math.random() * 20}s`,
+              animationDuration: `${Math.random() * 10 + 15}s`
+            }}
+          >
+            {['∑', '∫', 'π', '∞', '∆', 'Ω', 'μ', 'θ', '√', 'E=mc²', 'H₂O', 'O₂', 'CO₂', '⚡', '⚛', 'DNA'][Math.floor(Math.random() * 16)]}
+          </div>
+        ))}
+      </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <div className="flex justify-center items-center gap-4">
-          <div className="w-20 h-20 bg-[#0f172a] rounded-3xl flex items-center justify-center shadow-[0_0_30px_rgba(52,211,153,0.3)] relative overflow-hidden border-2 border-emerald-500/30">
-             <Bot size={44} className="text-emerald-400" />
-             <div className="absolute -top-1 -right-1 bg-white rounded overflow-hidden w-6 h-4 shadow-sm flex flex-col transform rotate-12">
-               <div className="h-1/2 w-full bg-green-600"></div>
-               <div className="h-1/2 w-full bg-white flex items-center justify-center relative">
-                 <span className="text-[5px] text-red-500 leading-none absolute" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>☪</span>
-               </div>
-             </div>
+          <div className="w-24 h-24 bg-[#0f172a] rounded-3xl flex items-center justify-center shadow-[0_0_30px_rgba(255,215,0,0.3)] relative overflow-hidden border-2 border-amber-500/30">
+             <img src={logoImg} alt="pro dali ai logo" className="w-full h-full object-cover" />
+             <div className="absolute bottom-0 right-0 text-3xl drop-shadow-md transform translate-x-1/4 translate-y-1/4 z-20">🇩🇿</div>
           </div>
           <div className="flex flex-col">
-            <h2 className="text-right text-4xl font-extrabold text-white tracking-tight">
-              Smart<span className="text-emerald-400">Teach</span>
+            <h2 className="text-right text-4xl tracking-tight">
+              <span className="gold-text-shiny font-serif font-black italic drop-shadow-[0_0_15px_rgba(255,215,0,0.3)]">pro dali ai</span>
             </h2>
             <p className="text-emerald-500/80 text-sm font-medium mt-1 text-right">مساعدك الذكي</p>
           </div>

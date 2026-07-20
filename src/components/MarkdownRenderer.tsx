@@ -15,6 +15,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   const synth = window.speechSynthesis;
 
   const handleSpeech = () => {
+    if (!synth) return;
     if (isPlaying) {
       synth.cancel();
       setIsPlaying(false);
@@ -38,7 +39,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 
   useEffect(() => {
     return () => {
-      synth.cancel(); // Stop on unmount
+      if (synth) synth.cancel(); // Stop on unmount
     };
   }, []);
 

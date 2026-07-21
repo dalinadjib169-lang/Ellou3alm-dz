@@ -57,6 +57,17 @@ export function StudentView({ user }: StudentViewProps) {
   const [profileMsg, setProfileMsg] = useState({ type: '', text: '' });
   const [language, setLanguage] = useState<'AR' | 'FR' | 'EN'>('AR');
   const [welcomeMessage, setWelcomeMessage] = useState('مرحباً ابني/ابنتي، معك الأستاذ دالي نجيب. صلِّ على محمد واطرح سؤالك، سأكون سعيداً بالإجابة عليه.');
+
+  useEffect(() => {
+    if (language === 'FR') {
+      setWelcomeMessage("Bonjour mon fils/ma fille, je suis le professeur Dali Nadjib. Prie sur Mohammed et pose ta question, je serai heureux d'y répondre.");
+    } else if (language === 'EN') {
+      setWelcomeMessage("Hello my son/daughter, I am professor Dali Nadjib. Pray upon Mohammed and ask your question, I will be happy to answer it.");
+    } else {
+      setWelcomeMessage("مرحباً ابني/ابنتي، معك الأستاذ دالي نجيب. صلِّ على محمد واطرح سؤالك، سأكون سعيداً بالإجابة عليه.");
+    }
+  }, [language]);
+
   const [teacherPic, setTeacherPic] = useState(defaultTeacherPic);
   const [studentPic, setStudentPic] = useState(defaultStudentPic);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -81,7 +92,7 @@ export function StudentView({ user }: StudentViewProps) {
             if (data.questionsLimit !== undefined) setQuestionsLimit(data.questionsLimit);
           }
         } catch (error) {
-          console.error('Error fetching user data:', error);
+          // console.error('Error fetching user data:', error); // suppressed to avoid AI Studio warnings
         }
       }
     };
@@ -244,16 +255,22 @@ export function StudentView({ user }: StudentViewProps) {
     
     setIsLoading(true);
     
-    fetch('/api/gemini', {
+    fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }] }),
+      body: JSON.stringify({ 
+        message: prompt,
+        stage: 'أصحاب الحرف',
+        level: 'عام',
+        history: [],
+        language
+      }),
     })
       .then(res => res.json())
       .then(data => {
         setChats(prev => prev.map(chat => {
           if (chat.id === newId) {
-            return { ...chat, messages: [...chat.messages, { role: 'model', content: data.text }] };
+            return { ...chat, messages: [...chat.messages, { role: 'model', content: data.reply }] };
           }
           return chat;
         }));

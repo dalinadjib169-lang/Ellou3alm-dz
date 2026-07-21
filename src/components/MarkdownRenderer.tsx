@@ -30,6 +30,19 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
     const utterance = new SpeechSynthesisUtterance(plainText);
     utterance.lang = 'ar-SA'; // Arabic
     
+    // Try to find a male Arabic voice, or just a clear voice
+    const voices = synth.getVoices();
+    const arabicVoices = voices.filter(v => v.lang.startsWith('ar'));
+    if (arabicVoices.length > 0) {
+      // Some platforms have 'Male' in the name, or we just pick the first which is usually default.
+      // Often Google Arabic is a female voice, but we can't perfectly control gender in all browsers.
+      // We will tweak pitch and rate to sound more confident and clear.
+      utterance.voice = arabicVoices.find(v => v.name.toLowerCase().includes('male')) || arabicVoices[0];
+    }
+    
+    utterance.pitch = 0.8; // slightly lower pitch for a more masculine/confident tone
+    utterance.rate = 0.9;  // slightly slower for clarity
+    
     utterance.onend = () => setIsPlaying(false);
     utterance.onerror = () => setIsPlaying(false);
 

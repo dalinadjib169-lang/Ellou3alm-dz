@@ -10,8 +10,7 @@ export function GraphView() {
   const [paramM, setParamM] = useState('1');
   const [error, setError] = useState('');
   
-  const [activeTab, setActiveTab] = useState<'graph' | 'study' | 'qa'>('graph');
-  
+    
   const [studyResult, setStudyResult] = useState('');
   const [isStudying, setIsStudying] = useState(false);
   
@@ -24,10 +23,13 @@ export function GraphView() {
       const scope = { m: parseFloat(paramM) || 0 };
       const compiled = math.compile(expression);
       const points = [];
-      for (let x = -10; x <= 10; x += 0.5) {
+      for (let x = -15; x <= 15; x += 0.1) {
         scope.x = x;
-        const y = compiled.evaluate(scope);
-        points.push({ x, y });
+        let y = compiled.evaluate(scope);
+        // Avoid drawing lines across vertical asymptotes by inserting null if y jumps too much
+        // Or simply clamp y to avoid SVG rendering issues
+        if (Math.abs(y) > 50) y = null; 
+        points.push({ x: Number(x.toFixed(2)), y });
       }
       setError('');
       return points;
@@ -74,8 +76,10 @@ export function GraphView() {
 
   const handleStudy = async () => {
     if (!expression) return;
-    setActiveTab('study');
-    setIsStudying(true);
+        setIsStudying(true);
+    setTimeout(() => {
+      document.getElementById('study-results-container')?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
     try {
       const res = await fetch('/api/study-function', {
         method: 'POST',
@@ -194,9 +198,9 @@ export function GraphView() {
             </div>
 
             {/* Keyboard */}
-            <div className="mt-6">
-              <h3 className="text-sm font-bold text-slate-400 mb-3">لوحة المفاتيح العلمية</h3>
-              <div className="grid grid-cols-4 gap-2">
+            <div className="mt-4">
+              <h3 className="text-sm font-bold text-slate-400 mb-2">لوحة المفاتيح العلمية</h3>
+              <div className="grid grid-cols-4 gap-1.5">
                 {keyboardKeys.map((k, i) => (
                   <button
                     key={i}
@@ -204,7 +208,7 @@ export function GraphView() {
                       if (k.val === 'clear') setExpression('');
                       else insertChar(k.val);
                     }}
-                    className={`${k.color} font-mono font-bold py-2 rounded-xl border hover:brightness-95 active:scale-95 transition-all`}
+                    className={`${k.color} font-mono font-bold py-1.5 text-sm rounded-lg border hover:brightness-95 active:scale-95 transition-all`}
                     dir="ltr"
                   >
                     {k.label}
@@ -215,136 +219,158 @@ export function GraphView() {
           </div>
         </div>
 
-        {/* Right Panel: Tabs for Graph, Study, QA */}
+        {/* Right Panel: Scrollable Single View */}
         <div className="lg:col-span-7 flex flex-col bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-          
-          <div className="flex bg-slate-50 border-b border-slate-100 shrink-0">
-            <button
-              onClick={() => setActiveTab('graph')}
-              className={`flex-1 py-4 flex items-center justify-center gap-2 font-bold transition-colors ${activeTab === 'graph' ? 'text-emerald-600 bg-white border-b-2 border-emerald-500' : 'text-slate-500 hover:bg-slate-100'}`}
-            >
-              <Activity size={18} /> رسم المنحنى
-            </button>
-            <button
-              onClick={() => setActiveTab('study')}
-              className={`flex-1 py-4 flex items-center justify-center gap-2 font-bold transition-colors ${activeTab === 'study' ? 'text-blue-600 bg-white border-b-2 border-blue-500' : 'text-slate-500 hover:bg-slate-100'}`}
-            >
-              <BookOpen size={18} /> دراسة الدالة
-            </button>
-            <button
-              onClick={() => setActiveTab('qa')}
-              className={`flex-1 py-4 flex items-center justify-center gap-2 font-bold transition-colors ${activeTab === 'qa' ? 'text-orange-600 bg-white border-b-2 border-orange-500' : 'text-slate-500 hover:bg-slate-100'}`}
-            >
-              <HelpCircle size={18} /> مساعد الدوال
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-6 relative">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-8 relative" id="study-results-container">
             
-            {/* Graph Tab */}
-            {activeTab === 'graph' && (
-              <div className="h-full min-h-[400px] flex flex-col">
-                {error ? (
-                  <div className="bg-red-50 text-red-600 p-4 rounded-xl text-center m-auto">{error}</div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="x" type="number" domain={['dataMin', 'dataMax']} tickCount={21} stroke="#94a3b8" />
-                      <YAxis type="number" domain={['auto', 'auto']} stroke="#94a3b8" />
-                      <Tooltip 
-                        formatter={(value: number) => [value.toFixed(2), 'f(x)']}
-                        labelFormatter={(label) => `x = ${label}`}
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                      />
-                      <ReferenceLine x={0} stroke="#475569" strokeWidth={2} />
-                      <ReferenceLine y={0} stroke="#475569" strokeWidth={2} />
-                      <Line 
-                        type="monotone" 
-                        dataKey="y" 
-                        stroke="#059669" 
-                        strokeWidth={3} 
-                        dot={false}
-                        activeDot={{ r: 8, fill: '#059669', stroke: '#fff', strokeWidth: 2 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                )}
+            {/* Initial State */}
+            {!studyResult && !isStudying && (
+              <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-slate-400 gap-4 bg-slate-50 rounded-2xl border border-slate-100 p-8 text-center">
+                <BookOpen size={64} className="opacity-20 mb-4" />
+                <h3 className="text-xl font-bold text-slate-600">جاهز لدراسة الدالة</h3>
+                <p>أدخل الدالة في اللوحة الجانبية واضغط على "دراسة الدالة بالتفصيل" للحصول على:</p>
+                <ul className="text-sm space-y-2 mt-4 text-slate-500">
+                  <li>✨ دراسة شاملة ومفصلة خطوة بخطوة</li>
+                  <li>📈 تمثيل بياني دقيق (معلم متعامد ومتجانس)</li>
+                  <li>💬 مساعد ذكي للإجابة عن أسئلتك حول الدالة</li>
+                </ul>
               </div>
             )}
 
-            {/* Study Tab */}
-            {activeTab === 'study' && (
-              <div className="h-full overflow-x-hidden min-w-0">
-                {isStudying ? (
-                  <div className="flex flex-col items-center justify-center h-full text-emerald-600 gap-4">
-                    <Loader2 className="animate-spin" size={48} />
-                    <p className="font-bold text-lg">جاري دراسة الدالة خطوة بخطوة...</p>
-                  </div>
-                ) : studyResult ? (
-                  <MarkdownRenderer content={studyResult} />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-4">
-                    <BookOpen size={48} className="opacity-20" />
-                    <p>اضغط على زر "دراسة الدالة بالتفصيل" لعرض جدول التغيرات والمشتقة.</p>
-                  </div>
-                )}
+            {/* Loading State */}
+            {isStudying && (
+              <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-blue-600 gap-6 bg-blue-50 rounded-2xl border border-blue-100 p-8 text-center">
+                <Loader2 className="animate-spin" size={64} />
+                <div>
+                  <h3 className="font-bold text-xl mb-2">جاري إعداد الدراسة...</h3>
+                  <p className="text-blue-500/80">أستاذك يقوم الآن بحساب النهايات، المشتقة، وجدول التغيرات</p>
+                </div>
               </div>
             )}
 
-            {/* Q&A Tab */}
-            {activeTab === 'qa' && (
-              <div className="flex flex-col h-full">
-                <div className="bg-orange-50 text-orange-800 p-4 rounded-2xl text-sm mb-4 border border-orange-100 flex items-start gap-3">
-                  <HelpCircle className="shrink-0 mt-0.5" size={18} />
-                  <div>
-                    <strong>واش مفهمتش في الدالة؟</strong>
-                    <p>سقسي على أي حاجة (كيفاش نحسب المشتقة، كيفاش ندرس الإشارة، كيفاش نلقى معادلة المماس...) وأستاذك راح يجاوبك.</p>
+            {/* Results State */}
+            {studyResult && !isStudying && (
+              <>
+                {/* 1. Study Section */}
+                <div id="study-section" className="scroll-mt-4">
+                  <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <BookOpen className="text-blue-500" />
+                    دراسة الدالة
+                  </h2>
+                  <div className="bg-slate-50 p-3 md:p-6 rounded-2xl border border-slate-100 overflow-x-hidden">
+                    <MarkdownRenderer content={studyResult} />
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto space-y-4 mb-4">
-                  {qaHistory.length === 0 ? (
-                    <div className="text-center text-slate-400 my-8">لا توجد أسئلة بعد.</div>
-                  ) : (
-                    qaHistory.map((qa, i) => (
-                      <div key={i} className="space-y-3">
-                        <div className="bg-slate-100 p-4 rounded-2xl rounded-tr-none max-w-[85%] self-end">
-                          {qa.q}
-                        </div>
-                        {qa.a ? (
-                          <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl rounded-tl-none overflow-x-hidden min-w-0">
-                            <MarkdownRenderer content={qa.a} />
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 text-blue-600 text-sm">
-                            <Loader2 className="animate-spin" size={16} /> أستاذك يكتب...
-                          </div>
-                        )}
+                {/* 2. Graph Section */}
+                <div>
+                  <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <Activity className="text-emerald-500" />
+                    التمثيل البياني (معلم متعامد ومتجانس)
+                  </h2>
+                  <div className="h-[400px] md:h-[500px] flex flex-col border border-slate-200 rounded-2xl bg-white p-2 md:p-4 shadow-inner">
+                    {error ? (
+                      <div className="bg-red-50 text-red-600 p-4 rounded-xl text-center m-auto">{error}</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={data} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                          <CartesianGrid strokeDasharray="none" stroke="#e2e8f0" />
+                          <XAxis 
+                            dataKey="x" 
+                            type="number" 
+                            domain={['dataMin', 'dataMax']} 
+                            tickCount={21} 
+                            stroke="#64748b" 
+                            tick={{ fontSize: 12 }}
+                          />
+                          <YAxis 
+                            type="number" 
+                            domain={[-15, 15]} 
+                            allowDataOverflow={true}
+                            stroke="#64748b" 
+                            tick={{ fontSize: 12 }}
+                          />
+                          <Tooltip 
+                            formatter={(value) => [Number(value).toFixed(2), 'f(x)']}
+                            labelFormatter={(label) => `x = ${label}`}
+                            contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                          />
+                          <ReferenceLine x={0} stroke="#0f172a" strokeWidth={2} />
+                          <ReferenceLine y={0} stroke="#0f172a" strokeWidth={2} />
+                          <Line 
+                            type="monotone" 
+                            dataKey="y" 
+                            stroke="#059669" 
+                            strokeWidth={3} 
+                            dot={false}
+                            connectNulls={false}
+                            isAnimationActive={true}
+                            activeDot={{ r: 6, fill: '#059669', stroke: '#fff', strokeWidth: 2 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. Q&A Section */}
+                <div id="qa-section" className="scroll-mt-4">
+                  <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <HelpCircle className="text-orange-500" />
+                    اسأل الأستاذ
+                  </h2>
+                  <div className="flex flex-col bg-slate-50 rounded-2xl border border-slate-100 p-3 md:p-6">
+                    <div className="bg-orange-50 text-orange-800 p-4 rounded-xl text-sm mb-4 border border-orange-100 flex items-start gap-3">
+                      <HelpCircle className="shrink-0 mt-0.5" size={18} />
+                      <div>
+                        <strong>واش مفهمتش في الدالة؟</strong>
+                        <p>سقسي على أي حاجة (كيفاش نحسب المشتقة، كيفاش ندرس الإشارة، المقاربات...) وأستاذك راح يجاوبك.</p>
                       </div>
-                    ))
-                  )}
+                    </div>
+
+                    <div className="flex-1 space-y-4 mb-4 max-h-[400px] overflow-y-auto pr-2">
+                      {qaHistory.length === 0 ? (
+                        <div className="text-center text-slate-400 my-4">لا توجد أسئلة بعد.</div>
+                      ) : (
+                        qaHistory.map((qa, i) => (
+                          <div key={i} className="space-y-3">
+                            <div className="bg-white border border-slate-200 p-4 rounded-2xl rounded-tr-none max-w-[85%] self-end shadow-sm">
+                              {qa.q}
+                            </div>
+                            {qa.a ? (
+                              <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl rounded-tl-none overflow-x-hidden min-w-0 shadow-sm">
+                                <MarkdownRenderer content={qa.a} />
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-blue-600 text-sm">
+                                <Loader2 className="animate-spin" size={16} /> أستاذك يكتب...
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <form onSubmit={handleAsk} className="flex gap-2 shrink-0">
+                      <input
+                        type="text"
+                        value={question}
+                        onChange={(e) => setQuestion(e.target.value)}
+                        placeholder="اكتب سؤالك هنا..."
+                        className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 shadow-sm"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isAsking || !question.trim()}
+                        className="bg-orange-500 hover:bg-orange-600 disabled:bg-slate-300 text-white p-3 rounded-xl transition-colors flex items-center justify-center shrink-0 shadow-sm"
+                      >
+                        <Send size={20} className="rotate-180" />
+                      </button>
+                    </form>
+                  </div>
                 </div>
-
-                <form onSubmit={handleAsk} className="flex gap-2 shrink-0">
-                  <input
-                    type="text"
-                    value={question}
-                    onChange={(e) => setQuestion(e.target.value)}
-                    placeholder="اكتب سؤالك هنا..."
-                    className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={isAsking || !question.trim()}
-                    className="bg-orange-500 hover:bg-orange-600 disabled:bg-slate-300 text-white p-3 rounded-xl transition-colors flex items-center justify-center shrink-0"
-                  >
-                    <Send size={20} className="rotate-180" />
-                  </button>
-                </form>
-              </div>
+              </>
             )}
-
           </div>
         </div>
       </div>

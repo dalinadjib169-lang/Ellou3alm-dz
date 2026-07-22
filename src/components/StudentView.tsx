@@ -228,7 +228,21 @@ export function StudentView({ user }: StudentViewProps) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [currentChatId]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      if (messages[messages.length - 1].role === 'user') {
+        scrollToBottom();
+      } else {
+        // Model replied, scroll to the start of this message
+        const msgElement = document.getElementById(`message-${messages.length - 1}`);
+        if (msgElement) {
+          msgElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }
+  }, [messages.length]);
 
 
 

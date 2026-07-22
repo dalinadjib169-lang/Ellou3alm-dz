@@ -3,6 +3,7 @@ import { uploadImageToCloudinary } from '../lib/cloudinary';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../lib/firebase';
+import defaultTeacherPic from '../assets/images/teacher_profile.jpg';
 import { Settings, Save, Image as ImageIcon, Loader2, LogIn, LogOut, AlertCircle } from 'lucide-react';
 
 export function DashboardView() {

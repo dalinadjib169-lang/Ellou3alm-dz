@@ -28,6 +28,8 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  const isAdmin = user?.email?.toLowerCase() === 'dalinadjib1990@gmail.com' || user?.email?.toLowerCase() === 'dalinadjib169@gmail.com';
+
   const handleLoadingComplete = () => {
     setLoadingApp(false);
   };
@@ -50,26 +52,30 @@ export default function App() {
             <span>تطبيق التلميذ</span>
           </button>
           <button 
-            onClick={() => setCurrentView('dashboard')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${currentView as string === 'dashboard' ? 'bg-emerald-600' : 'hover:bg-gray-800'}`}
-          >
-            <LayoutDashboard size={18} />
-            <span>لوحة الأستاذ</span>
-          </button>
-          <button 
             onClick={() => setCurrentView('graph')}
             className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${currentView as string === 'graph' ? 'bg-emerald-600' : 'hover:bg-gray-800'}`}
           >
             <Sigma size={18} />
             <span>دراسة ورسم دوال</span>
           </button>
-                <button 
-          onClick={() => setCurrentView('admin')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${currentView as string === 'admin' ? 'bg-emerald-600' : 'hover:bg-gray-800'}`}
-        >
-          <LayoutDashboard size={18} />
-          <span>لوحة النظام</span>
-        </button>
+          {isAdmin && (
+            <>
+              <button 
+                onClick={() => setCurrentView('dashboard')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${currentView as string === 'dashboard' ? 'bg-emerald-600' : 'hover:bg-gray-800'}`}
+              >
+                <LayoutDashboard size={18} />
+                <span>لوحة الأستاذ</span>
+              </button>
+              <button 
+                onClick={() => setCurrentView('admin')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${currentView as string === 'admin' ? 'bg-emerald-600' : 'hover:bg-gray-800'}`}
+              >
+                <LayoutDashboard size={18} />
+                <span>لوحة النظام</span>
+              </button>
+            </>
+          )}
       </nav>
         <div className="flex-1 overflow-y-auto">
           <StudentAuthView onLogin={(user) => setUser(user)} />

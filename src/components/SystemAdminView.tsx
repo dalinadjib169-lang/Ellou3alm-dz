@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { Users, Key, Activity, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 
 interface KeyStats {
@@ -8,11 +10,23 @@ interface KeyStats {
 }
 
 interface LogEntry {
-  id: number;
-  time: string;
+  id?: number;
+  timestamp: number;
+  time?: string;
   action: string;
-  maskedKey: string;
+  keyMasked: string;
+  maskedKey?: string;
   status: string;
+  error?: string;
+}
+
+interface StudentUser {
+  id: string;
+  name: string;
+  email: string;
+  stage: string;
+  level: string;
+  questionsUsed: number;
 }
 
 interface AdminData {
@@ -24,19 +38,54 @@ interface AdminData {
 
 export function SystemAdminView() {
   const [data, setData] = useState<AdminData | null>(null);
+  const [students, setStudents] = useState<StudentUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   const fetchData = async () => {
     try {
-      const res = await fetch('/api/admin/stats');
-      if (!res.ok) throw new Error('Failed to fetch admin stats');
-      const json = await res.json();
-      setData(json);
+      setLoading(true);
+      // Fetch students from Firestore
+      let studentsList = [];
+      try {
+        const studentsSnapshot = await getDocs(collection(db, 'students'));
+        studentsList = studentsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().name || 'مستخدم',
+          email: doc.data().email || 'بدون إيميل',
+          stage: doc.data().stage || '-',
+          level: doc.data().level || '-',
+          questionsUsed: doc.data().questionsUsed || 0,
+        }));
+        setStudents(studentsList);
+      } catch (e) {
+        console.error('Error fetching students:', e);
+      }
+      
+      let keys = [];
+      let logs = [];
+      try {
+        const res = await fetch('/api/admin/stats');
+        if (res.ok) {
+          const json = await res.json();
+          keys = json.keys || [];
+          logs = json.logs || [];
+        }
+      } catch (e) {
+        console.error('Error fetching API stats:', e);
+      }
+      
+      setData({
+        totalUsers: studentsList.length,
+        activeKeysCount: keys.length,
+        keys: keys,
+        logs: logs
+      });
       setError('');
     } catch (e: any) {
-      setError(e.message);
+      console.error(e);
+      setError('خطأ في جلب بيانات لوحة التحكم: ' + e.message);
     } finally {
       setLoading(false);
     }
@@ -103,6 +152,50 @@ export function SystemAdminView() {
                   <div className="text-sm text-slate-500 font-medium">مفاتيح API الشغالة</div>
                   <div className="text-3xl font-bold text-slate-800">{data.activeKeysCount}</div>
                 </div>
+              </div>
+            </div>
+
+            
+            {/* Users Table */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+              <div className="p-6 border-b border-slate-100">
+                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  <Users className="text-blue-500" />
+                  المستخدمين المسجلين (الإيميلات)
+                </h2>
+              </div>
+              <div className="overflow-x-auto max-h-96">
+                <table className="w-full text-right text-sm relative">
+                  <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-100 sticky top-0">
+                    <tr>
+                      <th className="px-6 py-4">الاسم</th>
+                      <th className="px-6 py-4">البريد الإلكتروني</th>
+                      <th className="px-6 py-4">الطور</th>
+                      <th className="px-6 py-4">المستوى</th>
+                      <th className="px-6 py-4">الأسئلة المستخدمة</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {students.map((student) => (
+                      <tr key={student.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-4 font-medium text-slate-700">{student.name}</td>
+                        <td className="px-6 py-4 text-slate-500" dir="ltr">{student.email}</td>
+                        <td className="px-6 py-4 text-slate-600">{student.stage}</td>
+                        <td className="px-6 py-4 text-slate-600">{student.level}</td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center justify-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-bold">
+                            {student.questionsUsed}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                    {students.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-8 text-center text-slate-500">لا يوجد مستخدمين مسجلين بعد.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
 
@@ -178,11 +271,11 @@ export function SystemAdminView() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {data.logs.map((log) => (
-                      <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-4 text-slate-500" dir="ltr">{new Date(log.time).toLocaleTimeString()}</td>
+                    {data.logs.map((log, i) => (
+                      <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-4 text-slate-500" dir="ltr">{new Date(log.timestamp).toLocaleTimeString()}</td>
                         <td className="px-6 py-4 font-medium text-slate-700">{log.action}</td>
-                        <td className="px-6 py-4 font-mono text-slate-500" dir="ltr">{log.maskedKey}</td>
+                        <td className="px-6 py-4 font-mono text-slate-500" dir="ltr">{log.keyMasked}</td>
                         <td className="px-6 py-4">
                           {log.status === 'Success' ? (
                             <span className="inline-flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">

@@ -17,7 +17,33 @@ app.use((req, res, next) => {
   next();
 });
 
+
 let currentKeyIndex = 0;
+
+// Admin Stats State
+const keyStats: Record<string, { masked: string; count: number; lastUsed: number | null }> = {};
+const recentLogs: Array<{ timestamp: number; action: string; keyMasked: string; status: string; error?: string }> = [];
+
+function addLog(action: string, key: string, status: string, error?: string) {
+  const masked = key.substring(0, 8) + '***';
+  if (keyStats[key]) {
+    keyStats[key].count++;
+    keyStats[key].lastUsed = Date.now();
+  }
+  
+  recentLogs.unshift({
+    timestamp: Date.now(),
+    action,
+    keyMasked: masked,
+    status,
+    error
+  });
+  
+  if (recentLogs.length > 100) {
+    recentLogs.pop();
+  }
+}
+
 
 function getNextApiKey() {
   const keys: string[] = [];
@@ -47,13 +73,25 @@ function getNextApiKey() {
   return key;
 }
 
-async function generateWithRotation(params: any) {
+async function generateWithRotation(params: any, actionName: string = 'Generate') {
   const apiKey = getNextApiKey();
   if (!apiKey) {
     throw new Error('No valid Gemini API keys found. Please set GEMINI_API_KEYS or GEMINI_API_KEY.');
   }
+  
+  if (!keyStats[apiKey]) {
+    keyStats[apiKey] = { masked: apiKey.substring(0, 8) + '***', count: 0, lastUsed: null };
+  }
+  
   const ai = new GoogleGenAI({ apiKey });
-  return await ai.models.generateContent(params);
+  try {
+    const response = await ai.models.generateContent(params);
+    addLog(actionName, apiKey, 'Success');
+    return response;
+  } catch (error: any) {
+    addLog(actionName, apiKey, 'Error', error.message);
+    throw error;
+  }
 }
 
 
@@ -194,4 +232,37 @@ ${mValue ? `(الرجاء إجراء المناقشة الوسيطية إن كا
 
   
 
+
+function getAllAvailableKeys() {
+  const keys = [];
+  if (process.env.GEMINI_API_KEYS) {
+    keys.push(...process.env.GEMINI_API_KEYS.split(','));
+  }
+  for (const [key, value] of Object.entries(process.env)) {
+    if (key.startsWith('GEMINI_API_KEY') && value) {
+      keys.push(...value.split(','));
+    }
+  }
+  return Array.from(new Set(
+    keys.map(k => k.replace(/[\u200B-\u200D\uFEFF\u200E\u200F\s]/g, '')).filter(k => k.length > 0)
+  ));
+}
+
+app.get('/api/admin/stats', (req, res) => {
+  const allKeys = getAllAvailableKeys();
+  
+  // Ensure all keys are in keyStats
+  allKeys.forEach(k => {
+    if (!keyStats[k]) {
+      keyStats[k] = { masked: k.substring(0, 8) + '***', count: 0, lastUsed: null };
+    }
+  });
+
+  res.json({
+    keys: Object.values(keyStats),
+    logs: recentLogs
+  });
+});
+
 export default app;
+

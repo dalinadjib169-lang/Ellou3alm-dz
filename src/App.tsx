@@ -12,9 +12,10 @@ import { LoadingScreen } from './components/LoadingScreen';
 import { GraduationCap, LayoutDashboard, LineChart as ChartIcon, Sigma } from 'lucide-react';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
+import { SystemAdminView } from './components/SystemAdminView';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'student' | 'dashboard' | 'graph'>('student');
+  const [currentView, setCurrentView] = useState<'student' | 'dashboard' | 'graph' | 'admin'>('student');
   const [user, setUser] = useState<any>(null);
   const [loadingApp, setLoadingApp] = useState(true);
   const [authInitialized, setAuthInitialized] = useState(false);
@@ -62,7 +63,14 @@ export default function App() {
             <Sigma size={18} />
             <span>دراسة ورسم دوال</span>
           </button>
-        </nav>
+                <button 
+          onClick={() => setCurrentView('admin')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${currentView === 'admin' ? 'bg-emerald-600' : 'hover:bg-gray-800'}`}
+        >
+          <LayoutDashboard size={18} />
+          <span>لوحة النظام</span>
+        </button>
+      </nav>
         <div className="flex-1 overflow-y-auto">
           <StudentAuthView onLogin={(user) => setUser(user)} />
         </div>
@@ -95,6 +103,13 @@ export default function App() {
           <Sigma size={18} />
           <span>دراسة ورسم دوال</span>
         </button>
+              <button 
+          onClick={() => setCurrentView('admin')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${currentView === 'admin' ? 'bg-emerald-600' : 'hover:bg-gray-800'}`}
+        >
+          <LayoutDashboard size={18} />
+          <span>لوحة النظام</span>
+        </button>
       </nav>
 
       {/* Main Content Area */}
@@ -102,6 +117,7 @@ export default function App() {
         {currentView === 'student' && <StudentView user={user} />}
         {currentView === 'dashboard' && <DashboardView />}
         {currentView === 'graph' && <GraphView />}
+        {currentView === 'admin' && <SystemAdminView />}
       </main>
     </div>
   );

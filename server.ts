@@ -3,6 +3,27 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 
+
+let keyStats: Record<string, { masked: string, count: number, lastUsed: string | null }> = {};
+let recentLogs: { id: number, time: string, action: string, maskedKey: string, status: string }[] = [];
+let logCounter = 0;
+let uniqueUsers = new Set<string>();
+
+function addLog(action: string, key: string, status: string) {
+  console.log('addLog called with:', action, key.substring(0, 8), status);
+  const masked = key ? key.substring(0, 8) + '***' : 'Unknown';
+  recentLogs.unshift({ id: ++logCounter, time: new Date().toISOString(), action, maskedKey: masked, status });
+  if (recentLogs.length > 50) recentLogs.pop();
+  
+  if (key) {
+    if (!keyStats[key]) {
+      keyStats[key] = { masked, count: 0, lastUsed: null };
+    }
+    keyStats[key].count++;
+    keyStats[key].lastUsed = new Date().toISOString();
+  }
+}
+
 let currentKeyIndex = 0;
 
 function getNextApiKey() {
@@ -33,13 +54,26 @@ function getNextApiKey() {
   return key;
 }
 
-async function generateWithRotation(params: any) {
+async function generateWithRotation(params: any, actionName: string = 'Generate') {
   const apiKey = getNextApiKey();
   if (!apiKey) {
-    throw new Error('No valid Gemini API keys found. Please set GEMINI_API_KEYS or GEMINI_API_KEY.');
+    throw new Error('No valid Gemini API keys found.');
   }
+  
+  // Track that we are using it
+  if (!keyStats[apiKey]) {
+    keyStats[apiKey] = { masked: apiKey.substring(0, 8) + '***', count: 0, lastUsed: null };
+  }
+  
   const ai = new GoogleGenAI({ apiKey });
-  return await ai.models.generateContent(params);
+  try {
+    const response = await ai.models.generateContent(params);
+    addLog(actionName, apiKey, 'Success');
+    return response;
+  } catch (error: any) {
+    addLog(actionName, apiKey, 'Error: ' + error.message);
+    throw error;
+  }
 }
 
 async function startServer() {
@@ -47,6 +81,43 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(express.json());
+
+  app.use((req, res, next) => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    uniqueUsers.add(ip);
+    next();
+  });
+
+  app.get('/api/admin/stats', (req, res) => {
+    // Also parse env keys to see if there are unused ones
+    const keys: string[] = [];
+    if (process.env.GEMINI_API_KEYS) {
+      keys.push(...process.env.GEMINI_API_KEYS.split(','));
+    }
+    for (const [k, v] of Object.entries(process.env)) {
+      if (k.startsWith('GEMINI_API_KEY') && v) {
+        keys.push(...v.split(','));
+      }
+    }
+    const cleanedKeys = Array.from(new Set(
+      keys.map(k => k.replace(/[\u200B-\u200D\uFEFF\u200E\u200F\s]/g, '')).filter(k => k.length > 0)
+    ));
+    
+    // Ensure all configured keys are in keyStats at least with 0 count
+    cleanedKeys.forEach(k => {
+      if (!keyStats[k]) {
+        keyStats[k] = { masked: k.substring(0, 8) + '***', count: 0, lastUsed: null };
+      }
+    });
+
+    res.json({
+      totalUsers: uniqueUsers.size,
+      activeKeysCount: cleanedKeys.length,
+      keys: Object.values(keyStats),
+      logs: recentLogs
+    });
+  });
+
 
   // API endpoint for Gemini chat
   app.post('/api/chat', async (req, res) => {
@@ -73,7 +144,7 @@ async function startServer() {
           systemInstruction: systemInstruction,
           temperature: 0.7,
         }
-      });
+      }, 'Chat');
 
       res.json({ reply: response.text });
     } catch (error: any) {
@@ -108,13 +179,13 @@ ${pointX ? `أريد دراسة النهاية ومعادلة المماس عن�
 ${mValue ? `(الرجاء إجراء المناقشة الوسيطية إن كان الوسيط m موجوداً في العبارة، علماً أن القيمة الحالية للرسم هي ${mValue})` : ''}`;
 
       const response = await generateWithRotation({
-        model: 'gemini-3.6-flash', // Using flash-lite for rate limit
+        model: 'gemini-3.6-flash',
         contents: prompt,
         config: {
           systemInstruction: systemInstruction,
-          temperature: 0.2, // Lower temperature for more accurate math
+          temperature: 0.2, 
         }
-      });
+      }, 'Study Function');
 
       res.json({ reply: response.text });
     } catch (error: any) {
@@ -150,7 +221,7 @@ ${mValue ? `(الرجاء إجراء المناقشة الوسيطية إن كا
           systemInstruction: systemInstruction,
           temperature: 0.7,
         }
-      });
+      }, 'Question');
 
       res.json({ reply: response.text });
     } catch (error: any) {

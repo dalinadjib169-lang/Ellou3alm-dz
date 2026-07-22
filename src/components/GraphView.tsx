@@ -78,7 +78,7 @@ export function GraphView() {
     if (!expression) return;
         setIsStudying(true);
     setTimeout(() => {
-      document.getElementById('study-results-container')?.scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('right-panel')?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
     try {
       const res = await fetch('/api/study-function', {
@@ -87,9 +87,11 @@ export function GraphView() {
         body: JSON.stringify({ expression, mValue: paramM, pointX })
       });
       const data = await res.json();
-      setStudyResult(data.reply);
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch');
+      setStudyResult(data.reply || "No reply from server.");
     } catch (e) {
-      setStudyResult('حدث خطأ أثناء محاولة دراسة الدالة.');
+      console.error(e);
+      setStudyResult("Error: " + e.message);
     } finally {
       setIsStudying(false);
     }
@@ -220,7 +222,7 @@ export function GraphView() {
         </div>
 
         {/* Right Panel: Scrollable Single View */}
-        <div className="lg:col-span-7 flex flex-col bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="lg:col-span-7 flex flex-col bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden" id="right-panel">
           <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-8 relative" id="study-results-container">
             
             {/* Initial State */}

@@ -43,17 +43,17 @@ export default function App() {
   if (currentView === 'student' && authInitialized && !user) {
     return (
       <div className="flex flex-col h-screen overflow-hidden font-sans bg-slate-900">
-        <nav className="bg-gray-900 text-white p-2 flex justify-center gap-4 text-sm z-50 shadow-md">
+        <nav className="bg-slate-900 text-white p-3 flex flex-wrap justify-center gap-3 text-sm font-medium z-50 shadow-lg border-b border-slate-800">
           <button 
             onClick={() => setCurrentView('student')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${currentView === 'student' ? 'bg-emerald-600' : 'hover:bg-gray-800'}`}
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm ${currentView === 'student' ? 'bg-emerald-600 shadow-emerald-900/50 scale-105' : 'bg-slate-800 hover:bg-slate-700'}`}
           >
             <GraduationCap size={18} />
             <span>تطبيق التلميذ</span>
           </button>
           <button 
             onClick={() => setCurrentView('graph')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${currentView as string === 'graph' ? 'bg-emerald-600' : 'hover:bg-gray-800'}`}
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm ${currentView === 'graph' ? 'bg-emerald-600 shadow-emerald-900/50 scale-105' : 'bg-slate-800 hover:bg-slate-700'}`}
           >
             <Sigma size={18} />
             <span>دراسة ورسم دوال</span>
@@ -62,14 +62,14 @@ export default function App() {
             <>
               <button 
                 onClick={() => setCurrentView('dashboard')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${currentView as string === 'dashboard' ? 'bg-emerald-600' : 'hover:bg-gray-800'}`}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm ${currentView === 'dashboard' ? 'bg-emerald-600 shadow-emerald-900/50 scale-105' : 'bg-slate-800 hover:bg-slate-700'}`}
               >
                 <LayoutDashboard size={18} />
                 <span>لوحة الأستاذ</span>
               </button>
               <button 
                 onClick={() => setCurrentView('admin')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${currentView as string === 'admin' ? 'bg-emerald-600' : 'hover:bg-gray-800'}`}
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm ${currentView === 'admin' ? 'bg-emerald-600 shadow-emerald-900/50 scale-105' : 'bg-slate-800 hover:bg-slate-700'}`}
               >
                 <LayoutDashboard size={18} />
                 <span>لوحة النظام</span>
@@ -87,31 +87,31 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen overflow-hidden font-sans">
       {/* App Navigation Navigation - strictly for switching roles for testing */}
-      <nav className="bg-gray-900 text-white p-2 flex justify-center gap-4 text-sm z-50 shadow-md">
+      <nav className="bg-slate-900 text-white p-3 flex flex-wrap justify-center gap-3 text-sm font-medium z-50 shadow-lg border-b border-slate-800">
         <button 
           onClick={() => setCurrentView('student')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${currentView === 'student' ? 'bg-emerald-600' : 'hover:bg-gray-800'}`}
+          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm ${currentView === 'student' ? 'bg-emerald-600 shadow-emerald-900/50 scale-105' : 'bg-slate-800 hover:bg-slate-700'}`}
         >
           <GraduationCap size={18} />
           <span>تطبيق التلميذ</span>
         </button>
         <button 
           onClick={() => setCurrentView('dashboard')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${currentView as string === 'dashboard' ? 'bg-emerald-600' : 'hover:bg-gray-800'}`}
+          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm ${currentView === 'dashboard' ? 'bg-emerald-600 shadow-emerald-900/50 scale-105' : 'bg-slate-800 hover:bg-slate-700'}`}
         >
           <LayoutDashboard size={18} />
           <span>لوحة الأستاذ</span>
         </button>
         <button 
           onClick={() => setCurrentView('graph')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${currentView as string === 'graph' ? 'bg-emerald-600' : 'hover:bg-gray-800'}`}
+          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm ${currentView === 'graph' ? 'bg-emerald-600 shadow-emerald-900/50 scale-105' : 'bg-slate-800 hover:bg-slate-700'}`}
         >
           <Sigma size={18} />
           <span>دراسة ورسم دوال</span>
         </button>
               <button 
           onClick={() => setCurrentView('admin')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${currentView as string === 'admin' ? 'bg-emerald-600' : 'hover:bg-gray-800'}`}
+          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm ${currentView === 'admin' ? 'bg-emerald-600 shadow-emerald-900/50 scale-105' : 'bg-slate-800 hover:bg-slate-700'}`}
         >
           <LayoutDashboard size={18} />
           <span>لوحة النظام</span>

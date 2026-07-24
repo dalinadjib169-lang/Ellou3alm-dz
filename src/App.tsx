@@ -13,6 +13,7 @@ import { GraduationCap, LayoutDashboard, LineChart as ChartIcon, Sigma } from 'l
 import { auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { SystemAdminView } from './components/SystemAdminView';
+import { AdminPanelView } from './components/AdminPanelView';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'student' | 'dashboard' | 'graph' | 'admin'>('student');
@@ -59,22 +60,13 @@ export default function App() {
             <span>دراسة ورسم دوال</span>
           </button>
           {isAdmin && (
-            <>
-              <button 
-                onClick={() => setCurrentView('dashboard')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm ${currentView === 'dashboard' ? 'bg-emerald-600 shadow-emerald-900/50 scale-105' : 'bg-slate-800 hover:bg-slate-700'}`}
-              >
-                <LayoutDashboard size={18} />
-                <span>لوحة الأستاذ</span>
-              </button>
-              <button 
-                onClick={() => setCurrentView('admin')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm ${currentView === 'admin' ? 'bg-emerald-600 shadow-emerald-900/50 scale-105' : 'bg-slate-800 hover:bg-slate-700'}`}
-              >
-                <LayoutDashboard size={18} />
-                <span>لوحة النظام</span>
-              </button>
-            </>
+            <button 
+              onClick={() => setCurrentView('admin')}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm ${currentView === 'admin' || currentView === 'dashboard' ? 'bg-emerald-600 shadow-emerald-900/50 scale-105' : 'bg-slate-800 hover:bg-slate-700'}`}
+            >
+              <LayoutDashboard size={18} />
+              <span>لوحة التحكم</span>
+            </button>
           )}
       </nav>
         <div className="flex-1 overflow-y-auto">
@@ -96,34 +88,29 @@ export default function App() {
           <span>تطبيق التلميذ</span>
         </button>
         <button 
-          onClick={() => setCurrentView('dashboard')}
-          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm ${currentView === 'dashboard' ? 'bg-emerald-600 shadow-emerald-900/50 scale-105' : 'bg-slate-800 hover:bg-slate-700'}`}
-        >
-          <LayoutDashboard size={18} />
-          <span>لوحة الأستاذ</span>
-        </button>
-        <button 
           onClick={() => setCurrentView('graph')}
           className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm ${currentView === 'graph' ? 'bg-emerald-600 shadow-emerald-900/50 scale-105' : 'bg-slate-800 hover:bg-slate-700'}`}
         >
           <Sigma size={18} />
           <span>دراسة ورسم دوال</span>
         </button>
-              <button 
-          onClick={() => setCurrentView('admin')}
-          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm ${currentView === 'admin' ? 'bg-emerald-600 shadow-emerald-900/50 scale-105' : 'bg-slate-800 hover:bg-slate-700'}`}
-        >
-          <LayoutDashboard size={18} />
-          <span>لوحة النظام</span>
-        </button>
+        {isAdmin && (
+          <button 
+            onClick={() => setCurrentView('admin')}
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm ${currentView === 'admin' || currentView === 'dashboard' ? 'bg-emerald-600 shadow-emerald-900/50 scale-105' : 'bg-slate-800 hover:bg-slate-700'}`}
+          >
+            <LayoutDashboard size={18} />
+            <span>لوحة التحكم</span>
+          </button>
+        )}
       </nav>
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-hidden">
         {currentView === 'student' && <StudentView user={user} />}
-        {currentView as string === 'dashboard' && <DashboardView />}
+        {currentView === 'dashboard' && <AdminPanelView />}
         {currentView as string === 'graph' && <GraphView />}
-        {currentView as string === 'admin' && <SystemAdminView />}
+        {currentView === 'admin' && <AdminPanelView />}
       </main>
     </div>
   );

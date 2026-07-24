@@ -65,12 +65,14 @@ export function SystemAdminView() {
       
       let keys = [];
       let logs = [];
+      let allEnvKeys = [];
       try {
         const res = await fetch('/api/admin/stats');
         if (res.ok) {
           const json = await res.json();
           keys = json.keys || [];
           logs = json.logs || [];
+          allEnvKeys = json.allEnvKeys || [];
         }
       } catch (e) {
         console.error('Error fetching API stats:', e);
@@ -80,6 +82,7 @@ export function SystemAdminView() {
         totalUsers: studentsList.length,
         activeKeysCount: keys.length,
         keys: keys,
+        allEnvKeys: allEnvKeys,
         logs: logs
       });
       setError('');
@@ -115,6 +118,7 @@ export function SystemAdminView() {
               لوحة تحكم النظام (Vercel / Cloud Run)
             </h1>
             <p className="text-slate-500 mt-2">مراقبة المستخدمين، حالة مفاتيح API، وسجلات التوليد المباشرة.</p>
+            <p className="text-amber-600 text-sm mt-2 bg-amber-50 p-2 rounded-lg border border-amber-100">ملاحظة: المستخدمون الذين سجلوا قبل هذا التحديث لن يظهروا في هذه القائمة بسبب تحديث قاعدة البيانات. يجب عليهم تسجيل حسابات جديدة للظهور هنا.</p>
           </div>
           <div className="flex items-center gap-4">
             <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">

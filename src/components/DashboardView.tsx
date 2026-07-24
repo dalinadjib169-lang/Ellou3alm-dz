@@ -120,7 +120,7 @@ export function DashboardView() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#F9FBFC] text-[#1A1A1A] flex items-center justify-center font-sans" dir="rtl">
+      <div className="h-full bg-slate-50 text-[#1A1A1A] flex items-center justify-center font-sans" dir="rtl">
         <Loader2 className="animate-spin text-emerald-600" size={48} />
       </div>
     );
@@ -128,7 +128,7 @@ export function DashboardView() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#F9FBFC] text-[#1A1A1A] flex items-center justify-center font-sans p-4" dir="rtl">
+      <div className="h-full bg-slate-50 text-[#1A1A1A] flex items-center justify-center font-sans p-4" dir="rtl">
         <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 max-w-md w-full text-center">
           <Settings className="text-emerald-600 mx-auto mb-4" size={48} />
           <h1 className="text-2xl font-bold mb-2">لوحة تحكم الأستاذ</h1>
@@ -147,7 +147,7 @@ export function DashboardView() {
 
   if (!allowedEmails.includes(user.email)) {
     return (
-      <div className="min-h-screen bg-[#F9FBFC] text-[#1A1A1A] flex items-center justify-center font-sans p-4" dir="rtl">
+      <div className="h-full bg-slate-50 text-[#1A1A1A] flex items-center justify-center font-sans p-4" dir="rtl">
         <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 max-w-md w-full text-center">
           <AlertCircle className="text-red-500 mx-auto mb-4" size={48} />
           <h1 className="text-2xl font-bold mb-2 text-red-600">غير مصرح لك</h1>
@@ -165,7 +165,7 @@ export function DashboardView() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F9FBFC] text-[#1A1A1A] py-12 text-right font-sans" dir="rtl">
+    <div className="h-full bg-slate-50 text-[#1A1A1A] py-12 overflow-y-auto text-right font-sans" dir="rtl">
       <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-sm border border-slate-100 p-10 relative">
         <button
           onClick={handleLogout}
